@@ -36,7 +36,10 @@ dependencies {
     compile("com.fasterxml.jackson.core:jackson-databind")
     compile("org.apache.tomcat.embed:tomcat-embed-jasper")	// View를 JSP를 사용하려면 필수(thymeleaf와 같이 사용 불가)
     compile 'jstl:jstl:1.2', 'taglibs:standard:1.1.2'	// JSP에서 TagLib을 사용하려면 필수
-    compile("axis:axis-saaj:1.2.1") // SOAP 
+    compile("axis:axis-saaj:1.2.1") // SOAP
+    compile("org.springframework.boot:spring-boot-starter-data-jpa")
+    compile("com.h2database:h2") // 메모리기반 DB
+    compile("org.projectlombok:lombok:1.16.2")
     testCompile("org.springframework.boot:spring-boot-starter-test")
 }
 
