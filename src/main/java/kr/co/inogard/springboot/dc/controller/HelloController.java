@@ -44,12 +44,11 @@ public class HelloController {
     	
     	userRepository.save(user);
     	
-    	for(User User : userRepository.findAll()) {
-            System.out.println(User);
-            list.add(User);
-        }
+//    	for(User User : userRepository.findAll()) {
+//            System.out.println(User);
+//            list.add(User);
+//        }    	
     	
-    	list.clear();
     	for(User User : userRepository.findByMaleFemale(MaleFemale.MALE)) {
             System.out.println(User);
             list.add(User);
