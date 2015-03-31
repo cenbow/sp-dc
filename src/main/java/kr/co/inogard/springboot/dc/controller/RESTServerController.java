@@ -6,6 +6,7 @@ import java.util.List;
 import kr.co.inogard.springboot.dc.domain.Body;
 import kr.co.inogard.springboot.dc.domain.Header;
 import kr.co.inogard.springboot.dc.domain.Item;
+import kr.co.inogard.springboot.dc.domain.Items;
 import kr.co.inogard.springboot.dc.domain.Response;
 
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,21 +50,24 @@ public class RESTServerController {
 		if(!bolError){
 			header.setResultCode("00");
 			header.setResultMsg("NORMAL SERVICE.");
+			
+			Items items = new Items();
 
-			List<Item> items = new ArrayList<>();
+			List<Item> itemList = new ArrayList<>();
 			
 			Item item = new Item();
 			item.setSupplyDate("20150312");
 			
-			items.add(item);
+			itemList.add(item);
 			
 			item = new Item();
 			item.setSupplyDate("20150313");
 			
-			items.add(item);
+			itemList.add(item);
 			
+			items.setItem(itemList);
 			
-			body.setNumOfRows(items.size());
+			body.setNumOfRows(itemList.size());
 			body.setPageNo(1);
 			body.setTotalCount(1);
 			body.setItems(items);

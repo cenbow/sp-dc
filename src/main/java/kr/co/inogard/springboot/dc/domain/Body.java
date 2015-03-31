@@ -1,7 +1,5 @@
 package kr.co.inogard.springboot.dc.domain;
 
-import java.util.List;
-
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementRef;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -9,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name="body")
 public class Body {
 	
-	private List<Item> items;
+	private Items items;
 	
 	private int numOfRows;
 	
@@ -17,12 +15,12 @@ public class Body {
 	
 	private int totalCount;
 
-	@XmlElementRef(name="item")
-	public List<Item> getItems() {
+	@XmlElementRef
+	public Items getItems() {
 		return items;
 	}
 
-	public void setItems(List<Item> items) {
+	public void setItems(Items items) {
 		this.items = items;
 	}
 

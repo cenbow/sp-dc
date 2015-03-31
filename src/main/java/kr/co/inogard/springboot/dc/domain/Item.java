@@ -7,6 +7,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class Item {
 	
 	private String supplyDate;
+	
+	private String eachLicenseAllowTypeOfBusiness;
 
 	@XmlElement(name="납품일수")
 	public String getSupplyDate() {
@@ -15,6 +17,16 @@ public class Item {
 
 	public void setSupplyDate(String supplyDate) {
 		this.supplyDate = supplyDate;
+	}
+
+	@XmlElement(name="각면허별허용업종")
+	public String getEachLicenseAllowTypeOfBusiness() {
+		return eachLicenseAllowTypeOfBusiness;
+	}
+
+	public void setEachLicenseAllowTypeOfBusiness(
+			String eachLicenseAllowTypeOfBusiness) {
+		this.eachLicenseAllowTypeOfBusiness = eachLicenseAllowTypeOfBusiness;
 	}
 	
 }
