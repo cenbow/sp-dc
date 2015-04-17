@@ -5,9 +5,9 @@ import java.util.List;
 
 import kr.co.inogard.springboot.dc.domain.Body;
 import kr.co.inogard.springboot.dc.domain.Header;
-import kr.co.inogard.springboot.dc.domain.Item;
 import kr.co.inogard.springboot.dc.domain.Items;
 import kr.co.inogard.springboot.dc.domain.Response;
+import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -53,14 +53,14 @@ public class RESTServerController {
 			
 			Items items = new Items();
 
-			List<Item> itemList = new ArrayList<>();
+			List<ResponseSFROA0802> itemList = new ArrayList<>();
 			
-			Item item = new Item();
+			ResponseSFROA0802 item = new ResponseSFROA0802();
 			item.setSupplyDate("20150312");
 			
 			itemList.add(item);
 			
-			item = new Item();
+			item = new ResponseSFROA0802();
 			item.setSupplyDate("20150313");
 			
 			itemList.add(item);

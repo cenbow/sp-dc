@@ -1,69 +1,125 @@
 package kr.co.inogard.springbiit.dc.controller;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.lang.reflect.Field;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-import junit.framework.Assert;
-import kr.co.inogard.springboot.dc.controller.HelloController;
-import kr.co.inogard.springboot.dc.domain.Item;
+import kr.co.inogard.springboot.dc.Application;
+import kr.co.inogard.springboot.dc.domain.RequestSFROA0802;
 import kr.co.inogard.springboot.dc.domain.Response;
+import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
+import kr.co.inogard.springboot.dc.service.OpenAPIRequestService;
+import kr.co.inogard.springboot.dc.service.Paging;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
-import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.util.ReflectionUtils;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = MockServletContext.class)
+@SpringApplicationConfiguration(classes = Application.class)
 @WebAppConfiguration
 public class DataGovControllerTest {
-
-	private MockMvc mvc;
-
-	@Before
-	public void setUp() throws Exception {
-		mvc = MockMvcBuilders.standaloneSetup(new HelloController()).build();
-	}
+	
+	@Autowired
+	private OpenAPIRequestService openAPIRequestService;
 
 	@Test
 	public void getData() throws Exception {
-
-		RestTemplate restTemplate = new RestTemplate();
-
-		String serviceKey = "%2Bbsi1l6gma46SEQTP7kk%2FXk86tzaRV5DKkoVm3V22HLw4M2P028O1zBzsNInT2okg8YgbHePAxDE%2BY3gtiY65w%3D%3D";
-
-		String url = "http://openapi.g2b.go.kr/openapi/service/rest/BidPublicInfoService/getBidPblancListInfoThng";
-
-		Response response = null;
-		try {
-			response = restTemplate.getForObject(new URI(url+"?ServiceKey="+serviceKey), Response.class);
-		} catch (RestClientException e) {
-			e.printStackTrace();
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		}
 		
-		Assert.assertEquals("00", response.getHeader().getResultCode());
+		List<ResponseSFROA0802> listResponse = new ArrayList();
 		
+		RequestSFROA0802 requestSFROA0802 = this.getBeanInstance(RequestSFROA0802.class);
+		System.out.println("============================ "+requestSFROA0802.getOrderCode());
+		
+		String subUrl = "BidPublicInfoService/getInsttAcctoBidPblancListThng";
+		//String subUrl = "HrcspSsstndrdInfoService/getInsttAcctoThngListInfoThng";
+		
+		int pageSize 	= 200;
+		int pageNo 		= 1;
+		
+		RequestSFROA0802 request = new RequestSFROA0802();
+		request.setNumOfRows(pageSize);
+		request.setPageNo(pageNo);
+		request.setSDate("20150401");
+		request.setEDate("20150417");
+		
+		String OrderCode = "한국공항공사";
+		OrderCode = URLEncoder.encode(OrderCode, "UTF-8");
+		request.setOrderCode(OrderCode);
+		
+		Response response = this.getDataFromOpenAPI(subUrl, request, listResponse);
 		System.out.println("ResultCode = "	+ response.getHeader().getResultCode());
 		System.out.println("ResultMsg = " 	+ response.getHeader().getResultMsg());
 		System.out.println("NumOfRows = " 	+ response.getBody().getNumOfRows());
 		System.out.println("PageNo = " 		+ response.getBody().getPageNo());
 		System.out.println("TotalCount = " 	+ response.getBody().getTotalCount());
-		System.out.println("getItems = " 	+ response.getBody().getItems());
-		if(null != response.getBody().getItems()){
-			for(Item item : response.getBody().getItems().getItem()){
-				System.out.println("SupplyDate:	" + item.getSupplyDate());
-				System.out.println("eachLicenseAllowTypeOfBusiness:	" + item.getEachLicenseAllowTypeOfBusiness());
+		
+		System.out.println("TotalResultCount : " + listResponse.size());
+		for(ResponseSFROA0802 responseSFROA0802 : listResponse){
+			System.out.println(responseSFROA0802);
+		}
+	}
+	
+	public Response getDataFromOpenAPI(String subUrl, RequestSFROA0802 request, List<ResponseSFROA0802> listResponse) throws Exception{
+		
+		Response response = openAPIRequestService.request(subUrl, request);
+		System.out.println("ResultCode = "	+ response.getHeader().getResultCode());
+		System.out.println("ResultMsg = " 	+ response.getHeader().getResultMsg());
+		System.out.println("NumOfRows = " 	+ response.getBody().getNumOfRows());
+		System.out.println("PageNo = " 		+ response.getBody().getPageNo());
+		System.out.println("TotalCount = " 	+ response.getBody().getTotalCount());
+		
+		if(response.getBody().getTotalCount() > 0 
+				&& null != response.getBody().getItems()
+				&& response.getBody().getItems().getItem().size() > 0){
+			
+			for(Iterator<ResponseSFROA0802> iter = response.getBody().getItems().getItem().iterator(); iter.hasNext();){
+				
+				ResponseSFROA0802 item = iter.next();
+				if(item.getOrderOrgNm().indexOf("한국공항공사") > -1){
+					System.out.println("입찰공고번호|발주기관코드|발주기관:	[" + item.getBidNo()+"] ["+item.getOrderOrgCode()+"] ["+item.getOrderOrgNm()+"]");
+					listResponse.add(item);
+				}
 			}
 		}
 		
+		// 페이징
+		Paging paging = new Paging();
+		paging.setPageSize(response.getBody().getNumOfRows());
+		paging.setPageNo(response.getBody().getPageNo());
+		paging.setTotalCount(response.getBody().getTotalCount());
+		
+		// 다음 페이지 내용 가져오기
+		if(paging.getNextPageNo() > response.getBody().getPageNo()){
+			request.setPageNo(paging.getNextPageNo());
+			
+			return getDataFromOpenAPI(subUrl, request, listResponse);
+		}
+		
+		return response;
 	}
+	
+	public <T> T getBeanInstance(Class<T> clazz){
+		Object resultObject = BeanUtils.instantiate(clazz);
+		
+		Field[] fields = clazz.getDeclaredFields();
+		
+	    for (Field field : fields) {
+	        ReflectionUtils.makeAccessible(field);
+	        
+	        if("orderCode".equals(field.getName())){
+	        	ReflectionUtils.setField(field, resultObject, "test");
+	        }
+	    }
+		
+		return (T)resultObject;
+	}
+	
 }
