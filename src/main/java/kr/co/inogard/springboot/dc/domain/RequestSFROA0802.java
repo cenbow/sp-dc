@@ -16,7 +16,7 @@ public class RequestSFROA0802 extends Request {
 	private String demandCode;
 	
 	/**
-	 * 공고/개찰일 유형(미입력 : 공고일1 입력 : 개찰일)
+	 * 공고/개찰일 유형(미입력 : 공고일, 1 입력 : 개찰일)
 	 */
 	private String dateType;
 	

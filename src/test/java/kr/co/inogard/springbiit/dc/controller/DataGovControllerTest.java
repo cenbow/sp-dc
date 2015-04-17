@@ -8,8 +8,10 @@ import java.util.List;
 
 import kr.co.inogard.springboot.dc.Application;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802;
+import kr.co.inogard.springboot.dc.domain.RequestSFROA0802Domain;
 import kr.co.inogard.springboot.dc.domain.Response;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
+import kr.co.inogard.springboot.dc.repository.RequestSFROA0802Repository;
 import kr.co.inogard.springboot.dc.service.OpenAPIRequestService;
 import kr.co.inogard.springboot.dc.service.Paging;
 
@@ -28,6 +30,9 @@ import org.springframework.util.ReflectionUtils;
 public class DataGovControllerTest {
 	
 	@Autowired
+	private RequestSFROA0802Repository requestSFROA0802Repository;
+	
+	@Autowired
 	private OpenAPIRequestService openAPIRequestService;
 
 	@Test
@@ -36,15 +41,14 @@ public class DataGovControllerTest {
 		List<ResponseSFROA0802> listResponse = new ArrayList();
 		
 		RequestSFROA0802 requestSFROA0802 = this.getBeanInstance(RequestSFROA0802.class);
-		System.out.println("============================ "+requestSFROA0802.getOrderCode());
 		
 		String subUrl = "BidPublicInfoService/getInsttAcctoBidPblancListThng";
-		//String subUrl = "HrcspSsstndrdInfoService/getInsttAcctoThngListInfoThng";
 		
 		int pageSize 	= 200;
 		int pageNo 		= 1;
 		
 		RequestSFROA0802 request = new RequestSFROA0802();
+		request.setGroupId("test");
 		request.setNumOfRows(pageSize);
 		request.setPageNo(pageNo);
 		request.setSDate("20150401");
@@ -68,6 +72,20 @@ public class DataGovControllerTest {
 	}
 	
 	public Response getDataFromOpenAPI(String subUrl, RequestSFROA0802 request, List<ResponseSFROA0802> listResponse) throws Exception{
+		
+		RequestSFROA0802Domain requestSFROA0802Domain = new RequestSFROA0802Domain();
+		BeanUtils.copyProperties(request, requestSFROA0802Domain);
+		
+		System.out.println("RequestSFROA0802Domain.getGroupId() = " + requestSFROA0802Domain.getGroupId());
+		System.out.println("RequestSFROA0802Domain.getRequestSeq() = " + requestSFROA0802Domain.getRequestSeq());
+		System.out.println("RequestSFROA0802Domain.getOrderCode() = " + requestSFROA0802Domain.getOrderCode());
+		
+		requestSFROA0802Repository.save(requestSFROA0802Domain);
+		for(RequestSFROA0802Domain requestSFROA0802Domain2 : requestSFROA0802Repository.findAll()){
+			System.out.println("requestSFROA0802Domain2.getGroupId() = " + requestSFROA0802Domain2.getGroupId());
+			System.out.println("requestSFROA0802Domain2.getRequestSeq() = " + requestSFROA0802Domain2.getRequestSeq());
+			System.out.println("requestSFROA0802Domain2.getOrderCode() = " + requestSFROA0802Domain2.getOrderCode());
+		}
 		
 		Response response = openAPIRequestService.request(subUrl, request);
 		System.out.println("ResultCode = "	+ response.getHeader().getResultCode());

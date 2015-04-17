@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class Request {
 	
+	private String groupId;
+	
 	/**
 	 * 한 페이지 결과 수
 	 */
