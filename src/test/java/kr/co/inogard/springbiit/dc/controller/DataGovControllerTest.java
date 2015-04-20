@@ -1,8 +1,9 @@
 package kr.co.inogard.springbiit.dc.controller;
 
 import java.lang.reflect.Field;
-import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import kr.co.inogard.springboot.dc.domain.RequestSFROA0802;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802Domain;
 import kr.co.inogard.springboot.dc.domain.Response;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
-import kr.co.inogard.springboot.dc.repository.RequestSFROA0802Repository;
+import kr.co.inogard.springboot.dc.service.OpenAPIContext;
 import kr.co.inogard.springboot.dc.service.OpenAPIRequestService;
 import kr.co.inogard.springboot.dc.service.Paging;
 
@@ -20,6 +21,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.util.ReflectionUtils;
@@ -30,13 +32,16 @@ import org.springframework.util.ReflectionUtils;
 public class DataGovControllerTest {
 	
 	@Autowired
-	private RequestSFROA0802Repository requestSFROA0802Repository;
+	private JpaRepository requestSFROA0802Repository;
 	
 	@Autowired
 	private OpenAPIRequestService openAPIRequestService;
 
 	@Test
 	public void getData() throws Exception {
+		
+		String timestamp = new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
+		OpenAPIContext.set(timestamp);
 		
 		List<ResponseSFROA0802> listResponse = new ArrayList();
 		
@@ -52,11 +57,8 @@ public class DataGovControllerTest {
 		request.setNumOfRows(pageSize);
 		request.setPageNo(pageNo);
 		request.setSDate("20150401");
-		request.setEDate("20150417");
-		
-		String OrderCode = "한국공항공사";
-		OrderCode = URLEncoder.encode(OrderCode, "UTF-8");
-		request.setOrderCode(OrderCode);
+		request.setEDate("20150420");
+		request.setOrderCode("한국공항공사");
 		
 		Response response = this.getDataFromOpenAPI(subUrl, request, listResponse);
 		System.out.println("ResultCode = "	+ response.getHeader().getResultCode());
@@ -69,6 +71,8 @@ public class DataGovControllerTest {
 		for(ResponseSFROA0802 responseSFROA0802 : listResponse){
 			System.out.println(responseSFROA0802);
 		}
+		
+		OpenAPIContext.reset();
 	}
 	
 	public Response getDataFromOpenAPI(String subUrl, RequestSFROA0802 request, List<ResponseSFROA0802> listResponse) throws Exception{
@@ -80,8 +84,9 @@ public class DataGovControllerTest {
 		System.out.println("RequestSFROA0802Domain.getRequestSeq() = " + requestSFROA0802Domain.getRequestSeq());
 		System.out.println("RequestSFROA0802Domain.getOrderCode() = " + requestSFROA0802Domain.getOrderCode());
 		
-		requestSFROA0802Repository.save(requestSFROA0802Domain);
-		for(RequestSFROA0802Domain requestSFROA0802Domain2 : requestSFROA0802Repository.findAll()){
+		requestSFROA0802Repository.saveAndFlush(requestSFROA0802Domain);
+		List<RequestSFROA0802Domain> list = requestSFROA0802Repository.findAll();
+		for(RequestSFROA0802Domain requestSFROA0802Domain2 : list){
 			System.out.println("requestSFROA0802Domain2.getGroupId() = " + requestSFROA0802Domain2.getGroupId());
 			System.out.println("requestSFROA0802Domain2.getRequestSeq() = " + requestSFROA0802Domain2.getRequestSeq());
 			System.out.println("requestSFROA0802Domain2.getOrderCode() = " + requestSFROA0802Domain2.getOrderCode());
