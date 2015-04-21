@@ -32,6 +32,9 @@ public class OpenAPIRequestService {
 	@Value("${data_go_kr.serviceKey}")
 	private String serviceKey;
 	
+	@Value("${agent.root}")
+	private String agentRootDirectory;
+	
 	public Response request(String subUrl, Object paramClass) throws Exception{
 		
 		Assert.notNull(url, "'url' must not be null");
@@ -80,7 +83,7 @@ public class OpenAPIRequestService {
 		RestTemplate restTemplate = new RestTemplate();
 		try {
 			List<HttpMessageConverter<?>> messageConverters = new ArrayList();
-			messageConverters.add(new CustomJaxb2RootElementHttpMessageConverter());
+			messageConverters.add(new CustomJaxb2RootElementHttpMessageConverter(agentRootDirectory));
 			restTemplate.setMessageConverters(messageConverters);
 			
 			response = restTemplate.getForObject(new URI(sbfullURI.toString()), Response.class);
