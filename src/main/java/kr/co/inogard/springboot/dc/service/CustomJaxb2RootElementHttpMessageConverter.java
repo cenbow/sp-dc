@@ -14,6 +14,7 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
@@ -25,6 +26,9 @@ public class CustomJaxb2RootElementHttpMessageConverter extends Jaxb2RootElement
 	
 	private static final Logger log = LoggerFactory.getLogger(CustomJaxb2RootElementHttpMessageConverter.class);
 	
+	@Value("${agent.root}")
+	private String agentRootDirectory;
+	
 	@Override
 	protected Source processSource(Source source) {
 		
@@ -32,6 +36,7 @@ public class CustomJaxb2RootElementHttpMessageConverter extends Jaxb2RootElement
 			StreamSource streamSource = (StreamSource) source;
 			//InputSource inputSource = new InputSource(streamSource.getInputStream());
 			
+			// InputStream의 내용을 ByteArrayOutputStream으로 담는다.(파일 저장과 SAXSource에 넘겨야 해서)
 			ByteArrayOutputStream _copy = new ByteArrayOutputStream();
 			InputStream inputStream = null;
 			try {
@@ -41,12 +46,13 @@ public class CustomJaxb2RootElementHttpMessageConverter extends Jaxb2RootElement
 				return source;
 			}
 			
+			// Open API로부터 받은 Raw 내용을 파일로 저장한다.
 			try {
 				inputStream = (InputStream)new ByteArrayInputStream(_copy.toByteArray());
-				File file = new File("c:/java/"+OpenAPIContext.get()+".xml");
+				File file = new File(agentRootDirectory+OpenAPIContext.get()+".xml");
 				org.apache.commons.io.FileUtils.writeByteArrayToFile(file, _copy.toByteArray());
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.error("Raw XML file save error", e);
 			} finally {
 				if(null != _copy){
 					try {

@@ -6,22 +6,28 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import kr.co.inogard.springboot.dc.Application;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802Domain;
 import kr.co.inogard.springboot.dc.domain.Response;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
+import kr.co.inogard.springboot.dc.service.AnnStdDocDownloadService;
 import kr.co.inogard.springboot.dc.service.OpenAPIContext;
 import kr.co.inogard.springboot.dc.service.OpenAPIRequestService;
 import kr.co.inogard.springboot.dc.service.Paging;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.aop.interceptor.SimpleAsyncUncaughtExceptionHandler;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.scheduling.annotation.AsyncConfigurer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.util.ReflectionUtils;
@@ -29,17 +35,21 @@ import org.springframework.util.ReflectionUtils;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 @WebAppConfiguration
-public class DataGovControllerTest {
+public class DataGovControllerTest implements AsyncConfigurer  {
 	
 	@Autowired
 	private JpaRepository requestSFROA0802Repository;
 	
 	@Autowired
 	private OpenAPIRequestService openAPIRequestService;
+	
+	@Autowired
+	private AnnStdDocDownloadService annStdDocDownloadService;
 
 	@Test
 	public void getData() throws Exception {
 		
+		// 업무 트렌젝션(DB아님) 단위의 키로 사용할 값을 생성하여 OpenAPIContext에 담아서 같은 값을 사용할 수 있도록 함.
 		String timestamp = new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
 		OpenAPIContext.set(timestamp);
 		
@@ -53,7 +63,7 @@ public class DataGovControllerTest {
 		int pageNo 		= 1;
 		
 		RequestSFROA0802 request = new RequestSFROA0802();
-		request.setGroupId("test");
+		request.setGroupId(timestamp);
 		request.setNumOfRows(pageSize);
 		request.setPageNo(pageNo);
 		request.setSDate("20150401");
@@ -68,10 +78,55 @@ public class DataGovControllerTest {
 		System.out.println("TotalCount = " 	+ response.getBody().getTotalCount());
 		
 		System.out.println("TotalResultCount : " + listResponse.size());
+		
+		List<String> listURL = new ArrayList();
 		for(ResponseSFROA0802 responseSFROA0802 : listResponse){
 			System.out.println(responseSFROA0802);
+			
+			if(null != responseSFROA0802.getAnnStdDoc1()
+					&& !"".equals(responseSFROA0802.getAnnStdDoc1())){
+				listURL.add(responseSFROA0802.getAnnStdDoc1());
+			}	
 		}
 		
+		try {
+			System.out.println("#############################");
+			System.out.println("비동기 호츌 시작");
+			System.out.println("#############################");
+			
+			System.out.println(listURL.get(0));
+			System.out.println(listURL.get(1));
+			System.out.println(listURL.get(2));
+			
+			annStdDocDownloadService.download(listURL.get(0));
+			annStdDocDownloadService.download(listURL.get(1));
+			annStdDocDownloadService.download(listURL.get(2));
+			
+			System.out.println("호출하고 이후 로직이 수행이 잘 되나요??????");
+			
+//			for(String url : listURL){
+//				Future<String> future = annStdDocDownloadService.download(url);
+//				if(future.isDone()){
+//					String path = future.get();
+//					System.out.println("path = " + path);
+//					// path 다운로드 받은 파일을 저장한 경로 정보를 Domain에 담아서 저장해야 함.
+//				}else{
+//					System.out.println("다른 일 수행");
+//				}
+//			}
+			System.out.println("#############################");
+			System.out.println("비동기 호츌 끝");
+			System.out.println("#############################");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		System.out.println("#############################");
+		System.out.println("업무 끝");
+		System.out.println("#############################");	
+		
+		Thread.sleep(15000);
+		
+		// 사용이 끝나면 삭제하기
 		OpenAPIContext.reset();
 	}
 	
@@ -144,5 +199,19 @@ public class DataGovControllerTest {
 		
 		return (T)resultObject;
 	}
+	
+    @Override
+    public Executor getAsyncExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setMaxPoolSize(10);
+        taskExecutor.setThreadNamePrefix("LULExecutor-");
+        taskExecutor.initialize();
+        return taskExecutor;
+    }
+    
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return new SimpleAsyncUncaughtExceptionHandler();
+    }
 	
 }

@@ -2,7 +2,9 @@ package kr.co.inogard.springboot.dc.domain;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import kr.co.inogard.springboot.dc.service.AnnStdDocAdapter;
 import lombok.ToString;
 
 @XmlRootElement(name="item")
@@ -18,6 +20,8 @@ public class ResponseSFROA0802 {
 	private String orderOrgCode;
 	
 	private String orderOrgNm;
+		
+	private String annStdDoc1; 
 	
 	@XmlElement(name="입찰공고번호")
 	public String getBidNo() {
@@ -63,6 +67,16 @@ public class ResponseSFROA0802 {
 
 	public void setOrderOrgNm(String orderOrgNm) {
 		this.orderOrgNm = orderOrgNm;
+	}
+
+	@XmlElement(name="공고규격서1")
+	@XmlJavaTypeAdapter(value=AnnStdDocAdapter.class)
+	public String getAnnStdDoc1() {
+		return annStdDoc1;
+	}
+
+	public void setAnnStdDoc1(String annStdDoc1) {
+		this.annStdDoc1 = annStdDoc1;
 	}
 	
 	
