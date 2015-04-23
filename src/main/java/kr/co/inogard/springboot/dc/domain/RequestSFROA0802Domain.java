@@ -2,23 +2,28 @@ package kr.co.inogard.springboot.dc.domain;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 
 import lombok.Data;
 
 @Entity
 @Data
+@IdClass(RequestSFROA0802DomainKey.class)
 @Table(name="RequestSFROA0802")
 public class RequestSFROA0802Domain {
 
+	@Id
+	@Column(name="groupId")
 	private String groupId;
 	
 	@Id
-	@GeneratedValue(strategy=GenerationType.AUTO)
-	private int requestSeq;
+//	@GeneratedValue(strategy=GenerationType.AUTO)
+//	@GeneratedValue(strategy=GenerationType.IDENTITY)
+//	@GeneratedValue(strategy=GenerationType.SEQUENCE)
+	@Column(name="requestSeq")
+	private Integer requestSeq;
 	
 	/**
 	 * 한 페이지 결과 수

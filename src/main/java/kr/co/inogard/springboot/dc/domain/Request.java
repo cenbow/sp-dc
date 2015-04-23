@@ -7,6 +7,8 @@ public class Request {
 	
 	private String groupId;
 	
+	private int requestSeq;
+	
 	/**
 	 * 한 페이지 결과 수
 	 */

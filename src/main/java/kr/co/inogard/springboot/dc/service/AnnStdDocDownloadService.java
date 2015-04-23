@@ -40,7 +40,7 @@ public class AnnStdDocDownloadService {
         String fileName = contentDisposition.substring(idx+keyWord.length(), contentDisposition.indexOf("\"", idx+keyWord.length()));
         fileName = new String(fileName.getBytes("8859_1"), "KSC5601");
 
-        log.debug("fileName "+fileName);
+        log.debug("fileName ["+fileName+"]");
         
         byte [] b = restTemplate.getForObject(new URI(url), byte[].class);
         
@@ -48,7 +48,7 @@ public class AnnStdDocDownloadService {
 
         org.apache.commons.io.FileUtils.writeByteArrayToFile(file, b);
         
-        log.debug("저장완료");
+        log.debug(fileName + " 저장완료");
         
         return new AsyncResult<String>(file.getAbsolutePath());
     }

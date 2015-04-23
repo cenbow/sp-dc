@@ -11,6 +11,12 @@ import lombok.ToString;
 @ToString
 public class ResponseSFROA0802 {
 	
+	private String groupId;
+	
+	private int requestSeq;
+	
+	private int seq;
+	
 	private String bidNo;
 	
 	private String supplyDate;
@@ -22,6 +28,30 @@ public class ResponseSFROA0802 {
 	private String orderOrgNm;
 		
 	private String annStdDoc1; 
+	
+	public String getGroupId() {
+		return groupId;
+	}
+
+	public void setGroupId(String groupId) {
+		this.groupId = groupId;
+	}
+
+	public int getRequestSeq() {
+		return requestSeq;
+	}
+
+	public void setRequestSeq(int requestSeq) {
+		this.requestSeq = requestSeq;
+	}
+	
+	public int getSeq() {
+		return seq;
+	}
+
+	public void setSeq(int seq) {
+		this.seq = seq;
+	}
 	
 	@XmlElement(name="입찰공고번호")
 	public String getBidNo() {
@@ -78,7 +108,5 @@ public class ResponseSFROA0802 {
 	public void setAnnStdDoc1(String annStdDoc1) {
 		this.annStdDoc1 = annStdDoc1;
 	}
-	
-	
-	
+
 }
