@@ -8,14 +8,16 @@ import lombok.Data;
 
 @Data
 @Embeddable
-public class ResponseSFROA0802DomainKey implements Serializable {
-
-	private static final long serialVersionUID = 6305577892477576172L;
+public class ResponseFileDomainKey implements Serializable {
+	
+	private static final long serialVersionUID = -5893570680474908072L;
 
 	private String groupId;
 	
 	private int requestSeq;
-
+	
 	private Integer seq;
+	
+	private String url;
 	
 }

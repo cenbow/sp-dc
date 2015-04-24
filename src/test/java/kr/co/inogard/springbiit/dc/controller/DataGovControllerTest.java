@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Future;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
@@ -17,6 +18,7 @@ import kr.co.inogard.springboot.dc.Application;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802Domain;
 import kr.co.inogard.springboot.dc.domain.Response;
+import kr.co.inogard.springboot.dc.domain.ResponseFileDomain;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802Domain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseSFROA0802Domain;
@@ -43,14 +45,12 @@ import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.orm.JpaNativeQueryProvider;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -137,55 +137,48 @@ public class DataGovControllerTest {
 		
 		System.out.println("TotalResultCount : " + listResponse.size());
 		
-		List<String> listURL = new ArrayList();
+		List<ResponseFileDomain> listDownloadFileCandidate = new ArrayList<>();
 		for(ResponseSFROA0802 responseSFROA0802 : listResponse){
 			System.out.println(responseSFROA0802);
 			
 			ResponseSFROA0802Domain responseSFROA0802Domain = new ResponseSFROA0802Domain();
 			BeanUtils.copyProperties(responseSFROA0802, responseSFROA0802Domain);
-			responseSFROA0802Repository.save(responseSFROA0802Domain);
 			
 			if(null != responseSFROA0802.getAnnStdDoc1()
 					&& !"".equals(responseSFROA0802.getAnnStdDoc1())){
-				listURL.add(responseSFROA0802.getAnnStdDoc1());
-			}
+				
+				ResponseFileDomain responseFileDomain = new ResponseFileDomain();
+				responseFileDomain.setGroupId(responseSFROA0802Domain.getGroupId());
+				responseFileDomain.setRequestSeq(responseSFROA0802Domain.getRequestSeq());
+				responseFileDomain.setSeq(responseSFROA0802Domain.getSeq());
+				responseFileDomain.setUrl(responseSFROA0802.getAnnStdDoc1());
+				
+				listDownloadFileCandidate.add(responseFileDomain);
+			}			
+			responseSFROA0802Repository.save(responseSFROA0802Domain);
 		}
 		responseSFROA0802Repository.flush();
 		
-//		try {
-//			System.out.println("#############################");
-//			System.out.println("비동기 호츌 시작");
-//			System.out.println("#############################");
-//			
-////			System.out.println(listURL.get(0));
-////			System.out.println(listURL.get(1));
-////			System.out.println(listURL.get(2));
-////			
-////			annStdDocDownloadService.download(listURL.get(0));
-////			annStdDocDownloadService.download(listURL.get(1));
-////			annStdDocDownloadService.download(listURL.get(2));
-////			
-////			System.out.println("호출하고 이후 로직이 수행이 잘 되나요??????");
-//			
-//			for(String url : listURL){
-//				Future<String> future = annStdDocDownloadService.download(url);
-//				if(future.isDone()){
-//					String path = future.get();
-//					System.out.println("path = " + path);
-//					// path 다운로드 받은 파일을 저장한 경로 정보를 Domain에 담아서 저장해야 함.
-//				}else{
-//					System.out.println("다른 일 수행");
-//				}
-//			}
-//			System.out.println("#############################");
-//			System.out.println("비동기 호츌 끝");
-//			System.out.println("#############################");
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		System.out.println("#############################");
-//		System.out.println("업무 끝");
-//		System.out.println("#############################");	
+		try {
+			System.out.println("#############################");
+			System.out.println("비동기 호츌 시작");
+			System.out.println("#############################");
+			
+			for(ResponseFileDomain responseFileDomain : listDownloadFileCandidate){
+				Future<ResponseFileDomain> future = annStdDocDownloadService.download(responseFileDomain);
+				if(future.isDone()){
+					System.out.println("######## 비동기 작업 완료 ########");
+				}
+			}
+			System.out.println("#############################");
+			System.out.println("비동기 호츌 끝");
+			System.out.println("#############################");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		System.out.println("#############################");
+		System.out.println("업무 끝");
+		System.out.println("#############################");	
 		
 		
 		runBatch(timestamp);
@@ -325,9 +318,7 @@ public class DataGovControllerTest {
 	
 	@Bean
 	public JpaItemWriter<ExternalResponseSFROA0802Domain> responseWriter() {
-    	System.out.println("######################");
-    	System.out.println("Writer");
-		JpaItemWriter writer = new JpaItemWriter();
+    	JpaItemWriter writer = new JpaItemWriter();
 		writer.setEntityManagerFactory(datasourceTwoEntityManager);
 	    return writer;
 	}

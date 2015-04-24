@@ -4,9 +4,13 @@ import java.io.File;
 import java.net.URI;
 import java.util.concurrent.Future;
 
+import kr.co.inogard.springboot.dc.domain.ResponseFileDomain;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
@@ -21,16 +25,19 @@ public class AnnStdDocDownloadService {
 	
 	@Value("${agent.fileroot}")
 	private String agentFileRootDirectory;
+	
+	@Autowired
+	private JpaRepository responseFileRepository;
 
     @Async
-    public Future<String> download(String url) throws Exception {
-    	log.debug("첨부파일 다운로드 "+url);
+    public Future<ResponseFileDomain> download(ResponseFileDomain responseFileDomain) throws Exception {
+    	log.debug("첨부파일 다운로드 "+responseFileDomain.getUrl());
     	
-    	Assert.notNull(url, "'url' must not be null");
+    	Assert.notNull(responseFileDomain.getUrl(), "'url' must not be null");
     	
         RestTemplate restTemplate = new RestTemplate();
         
-        HttpHeaders httpHeaders = restTemplate.headForHeaders(new URI(url));
+        HttpHeaders httpHeaders = restTemplate.headForHeaders(new URI(responseFileDomain.getUrl()));
         
         String contentDisposition = httpHeaders.getFirst(httpHeaders.CONTENT_DISPOSITION);
 //        log.debug("RAW "+httpHeaders.CONTENT_DISPOSITION+" "+contentDisposition);
@@ -42,7 +49,9 @@ public class AnnStdDocDownloadService {
 
         log.debug("fileName ["+fileName+"]");
         
-        byte [] b = restTemplate.getForObject(new URI(url), byte[].class);
+        responseFileDomain.setFileName(fileName);
+        
+        byte [] b = restTemplate.getForObject(new URI(responseFileDomain.getUrl()), byte[].class);
         
         File file = new File(agentFileRootDirectory+"/"+fileName);
 
@@ -50,7 +59,12 @@ public class AnnStdDocDownloadService {
         
         log.debug(fileName + " 저장완료");
         
-        return new AsyncResult<String>(file.getAbsolutePath());
+        responseFileDomain.setFilePath(file.getAbsolutePath());
+        
+        System.out.println("ResponseFileDomain DB 저장"+responseFileDomain);
+        responseFileRepository.saveAndFlush(responseFileDomain);
+        
+        return new AsyncResult<ResponseFileDomain>(responseFileDomain);
     }
 	
 }
