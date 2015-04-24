@@ -19,11 +19,14 @@ import kr.co.inogard.springboot.dc.domain.Response;
 import kr.co.inogard.springboot.dc.domain.ResponseFileDomain;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802Domain;
+import kr.co.inogard.springboot.dc.external.domain.ExternalResponseFileDomain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseSFROA0802Domain;
 import kr.co.inogard.springboot.dc.service.AnnStdDocAsyncDownloadService;
 import kr.co.inogard.springboot.dc.service.OpenAPIContext;
 import kr.co.inogard.springboot.dc.service.OpenAPIRequestService;
 import kr.co.inogard.springboot.dc.service.Paging;
+import kr.co.inogard.springboot.dc.service.ResponseFileItemProcessor;
+import kr.co.inogard.springboot.dc.service.ResponseFileItemReader;
 import kr.co.inogard.springboot.dc.service.ResponseSFROA0802ItemProcessor;
 import kr.co.inogard.springboot.dc.service.ResponseSFROA0802ItemReader;
 
@@ -99,7 +102,11 @@ public class DataGovControllerTest {
 	
 	@Autowired
 	@Qualifier("responseSFROA0802ItemReader")
-	private ResponseSFROA0802ItemReader ResponseSFROA0802ItemReader;
+	private ResponseSFROA0802ItemReader responseSFROA0802ItemReader;
+	
+	@Autowired
+	@Qualifier("responseFileItemReader")
+	private ResponseFileItemReader responseFileItemReader;
 
 	@Test
 	public void getData() throws Exception {
@@ -277,27 +284,52 @@ public class DataGovControllerTest {
 	
 	@Bean
 	public Step step1() throws Exception {
-		return ((SimpleStepBuilder<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain>) stepBuilderFactory.get("response")
+		return ((SimpleStepBuilder<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain>) stepBuilderFactory.get("responseSFROA0802DomainTransfer")
                 .<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> chunk(100) // 읽기/쓰기 단위
                 .transactionManager(datasourceTwoTransactionManager))
-                .reader(ResponseSFROA0802ItemReader)
-                .writer(responseWriter())
-                .processor(responseProcessor())
+                .reader(responseSFROA0802ItemReader)
+                .writer(responseSFROA0802Writer())
+                .processor(responseSFROA0802Processor())
 //                .taskExecutor(responseExecutor)
 //                .throttleLimit(2) // 동시실행 쓰레드 갯수
                 .build();
 	}
 	
 	@Bean
-	public JpaItemWriter<ExternalResponseSFROA0802Domain> responseWriter() {
+	public JpaItemWriter<ExternalResponseSFROA0802Domain> responseSFROA0802Writer() {
     	JpaItemWriter writer = new JpaItemWriter();
 		writer.setEntityManagerFactory(datasourceTwoEntityManager);
 	    return writer;
 	}
 	
 	@Bean
-	public ItemProcessor<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> responseProcessor() {
+	public ItemProcessor<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> responseSFROA0802Processor() {
         return new ResponseSFROA0802ItemProcessor();
+    }
+	
+	@Bean
+	public Step step2() throws Exception {
+		return ((SimpleStepBuilder<ResponseFileDomain, ExternalResponseFileDomain>) stepBuilderFactory.get("responseFileDomainTransfer")
+                .<ResponseFileDomain, ExternalResponseFileDomain> chunk(100) // 읽기/쓰기 단위
+                .transactionManager(datasourceTwoTransactionManager))
+                .reader(responseFileItemReader)
+                .writer(responseFileWriter())
+                .processor(responseFileProcessor())
+//                .taskExecutor(responseExecutor)
+//                .throttleLimit(2) // 동시실행 쓰레드 갯수
+                .build();
+	}
+	
+	@Bean
+	public JpaItemWriter<ExternalResponseFileDomain> responseFileWriter() {
+    	JpaItemWriter writer = new JpaItemWriter();
+		writer.setEntityManagerFactory(datasourceTwoEntityManager);
+	    return writer;
+	}
+	
+	@Bean
+	public ItemProcessor<ResponseFileDomain, ExternalResponseFileDomain> responseFileProcessor() {
+        return new ResponseFileItemProcessor();
     }
 	
 	public <T> T getBeanInstance(Class<T> clazz){

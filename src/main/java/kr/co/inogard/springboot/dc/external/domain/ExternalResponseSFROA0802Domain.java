@@ -1,9 +1,14 @@
 package kr.co.inogard.springboot.dc.external.domain;
 
+import java.util.List;
+
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802DomainKey;
@@ -47,5 +52,10 @@ public class ExternalResponseSFROA0802Domain {
 	
 	@Column(name="annStdDoc1", length=400)
 	private String annStdDoc1;
+	
+	@OneToMany(fetch=FetchType.LAZY
+			, mappedBy="externalResponseSFROA0802Domain"
+			, cascade=CascadeType.REMOVE) 
+	private List<ExternalResponseFileDomain> externalResponseFileDomain;
 	
 }
