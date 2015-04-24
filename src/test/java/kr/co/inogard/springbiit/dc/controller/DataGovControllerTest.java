@@ -4,10 +4,8 @@ import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
@@ -22,15 +20,17 @@ import kr.co.inogard.springboot.dc.domain.ResponseFileDomain;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802Domain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseSFROA0802Domain;
-import kr.co.inogard.springboot.dc.service.AnnStdDocDownloadService;
+import kr.co.inogard.springboot.dc.service.AnnStdDocAsyncDownloadService;
 import kr.co.inogard.springboot.dc.service.OpenAPIContext;
 import kr.co.inogard.springboot.dc.service.OpenAPIRequestService;
 import kr.co.inogard.springboot.dc.service.Paging;
 import kr.co.inogard.springboot.dc.service.ResponseSFROA0802ItemProcessor;
+import kr.co.inogard.springboot.dc.service.ResponseSFROA0802ItemReader;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.Step;
@@ -46,8 +46,6 @@ import org.springframework.batch.core.repository.support.JobRepositoryFactoryBea
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.database.JpaItemWriter;
-import org.springframework.batch.item.database.JpaPagingItemReader;
-import org.springframework.batch.item.database.orm.JpaNativeQueryProvider;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -75,7 +73,7 @@ public class DataGovControllerTest {
 	private OpenAPIRequestService openAPIRequestService;
 	
 	@Autowired
-	private AnnStdDocDownloadService annStdDocDownloadService;
+	private AnnStdDocAsyncDownloadService annStdDocAsyncDownloadService;
 	
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
@@ -85,23 +83,23 @@ public class DataGovControllerTest {
 
 	@Autowired
 	@Qualifier("datasourceOneTransactionManager")
-	PlatformTransactionManager datasourceOneTransactionManager;
+	private PlatformTransactionManager datasourceOneTransactionManager;
 
 	@Autowired
 	@Qualifier("datasourceTwoTransactionManager")
-	PlatformTransactionManager datasourceTwoTransactionManager;
+	private PlatformTransactionManager datasourceTwoTransactionManager;
 	
 	@Autowired
 	@Qualifier("datasourceOneDataSource")
-	DataSource dataSource;
-	
-	@Autowired
-	@Qualifier("datasourceOneEntityManager")
-	EntityManagerFactory datasourceOneEntityManager;
+	private DataSource dataSource;
 	
 	@Autowired
 	@Qualifier("datasourceTwoEntityManager")
 	private EntityManagerFactory datasourceTwoEntityManager;
+	
+	@Autowired
+	@Qualifier("responseSFROA0802ItemReader")
+	private ResponseSFROA0802ItemReader ResponseSFROA0802ItemReader;
 
 	@Test
 	public void getData() throws Exception {
@@ -165,7 +163,7 @@ public class DataGovControllerTest {
 			System.out.println("#############################");
 			
 			for(ResponseFileDomain responseFileDomain : listDownloadFileCandidate){
-				Future<ResponseFileDomain> future = annStdDocDownloadService.download(responseFileDomain);
+				Future<ResponseFileDomain> future = annStdDocAsyncDownloadService.download(responseFileDomain);
 				if(future.isDone()){
 					System.out.println("######## 비동기 작업 완료 ########");
 				}
@@ -263,11 +261,11 @@ public class DataGovControllerTest {
 		SimpleAsyncTaskExecutor simpleAsyncTaskExecutor = new SimpleAsyncTaskExecutor();
 		
 		SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
-        simpleJobLauncher.setJobRepository(jobRepositoryFactoryBean.getJobRepository());
+        simpleJobLauncher.setJobRepository(jobRepositoryFactoryBean.getObject());
         simpleJobLauncher.setTaskExecutor(simpleAsyncTaskExecutor);
         simpleJobLauncher.afterPropertiesSet();
-        
-        simpleJobLauncher.run(job(), jobParameters);
+        JobExecution execution = simpleJobLauncher.run(job(), jobParameters);
+        System.out.println("Exit Status : " + execution.getStatus());
 	}
 	
 	@Bean
@@ -282,38 +280,12 @@ public class DataGovControllerTest {
 		return ((SimpleStepBuilder<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain>) stepBuilderFactory.get("response")
                 .<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> chunk(100) // 읽기/쓰기 단위
                 .transactionManager(datasourceTwoTransactionManager))
-                .reader(responseReader())
+                .reader(ResponseSFROA0802ItemReader)
                 .writer(responseWriter())
                 .processor(responseProcessor())
 //                .taskExecutor(responseExecutor)
 //                .throttleLimit(2) // 동시실행 쓰레드 갯수
                 .build();
-	}
-	
-	@Bean
-	public JpaPagingItemReader<ResponseSFROA0802Domain> responseReader() throws Exception {
-		String groupId = OpenAPIContext.get();
-    	Map<String, Object> mapParam = new HashMap<>();
-    	mapParam.put("groupId", groupId);
-		System.out.println("====================================");
-		System.out.println("====================================");
-		System.out.println("groupId = " + groupId);
-		System.out.println("====================================");
-		System.out.println("====================================");
-    	
-    	JpaNativeQueryProvider<ResponseSFROA0802Domain> jpaNativeQueryProvider= new JpaNativeQueryProvider<ResponseSFROA0802Domain>();
-    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseSFROA0802 WHERE groupId=:groupId");
-    	jpaNativeQueryProvider.setEntityClass(ResponseSFROA0802Domain.class);
-    	jpaNativeQueryProvider.afterPropertiesSet();
-
-		JpaPagingItemReader reader = new JpaPagingItemReader();
-		reader.setEntityManagerFactory(datasourceOneEntityManager);
-		reader.setQueryProvider(jpaNativeQueryProvider);
-		reader.setParameterValues(mapParam);
-		reader.setPageSize(10);
-		reader.afterPropertiesSet();
-		reader.setSaveState(true);
-	    return reader;
 	}
 	
 	@Bean

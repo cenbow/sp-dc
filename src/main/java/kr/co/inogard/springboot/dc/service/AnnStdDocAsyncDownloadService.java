@@ -19,7 +19,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.RestTemplate;
 
 @Service
-public class AnnStdDocDownloadService {
+public class AnnStdDocAsyncDownloadService {
 	
 	private static final Logger log = LoggerFactory.getLogger(OpenAPIRequestService.class);
 	
