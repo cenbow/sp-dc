@@ -5,7 +5,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name="response")
 public class Response {
-	
+
 	private Header header;
 	
 	private Body body;

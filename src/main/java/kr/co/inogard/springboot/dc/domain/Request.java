@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class Request {
-	
+
 	private String groupId;
 	
 	private int requestSeq;

@@ -1,5 +1,6 @@
 package kr.co.inogard.springboot.dc.external.domain;
 
+import java.io.Serializable;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -7,34 +8,19 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.IdClass;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802DomainKey;
 import lombok.Data;
 
 @Entity
 @Data
-@IdClass(ResponseSFROA0802DomainKey.class)
 @Table(name="ExternalResponseSFROA0802")
-public class ExternalResponseSFROA0802Domain {
+public class ExternalResponseSFROA0802Domain implements Serializable {
 	
+	private static final long serialVersionUID = -7707863697246973180L;
+
 	@Id
-	@Column(name="groupId")
-	private String groupId;
-	
-	@Id
-	@Column(name="requestSeq")
-	private int requestSeq;
-	
-	@Id
-//	@GeneratedValue(strategy=GenerationType.AUTO)
-//	@GeneratedValue(strategy=GenerationType.IDENTITY)
-//	@GeneratedValue(strategy=GenerationType.SEQUENCE)
-	@Column(name="seq")
-	private Integer seq;
-	
 	@Column(name="bidNo", length=40)
 	private String bidNo;
 	

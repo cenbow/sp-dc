@@ -1,23 +1,25 @@
 package kr.co.inogard.springboot.dc.service;
 
+import kr.co.inogard.springboot.dc.domain.OpenAPIRequest;
+
 public class OpenAPIContext {
 
-	private static ThreadLocal<String> local = new ThreadLocal<String>();
+	private static ThreadLocal<OpenAPIRequest> local = new ThreadLocal<>();
 	
 	public static void reset() {
 		local.remove();
 	}
 
-	public static void set(String value) {
-		local.set(value);
+	public static void set(OpenAPIRequest openAPIRequest) {
+		local.set(openAPIRequest);
 	}
 
-	public static String get() {
+	public static OpenAPIRequest get() {
 		
-		String s = local.get();
+		OpenAPIRequest s = local.get();
 		
 		if(null == s){
-			s = new String("");
+			s = new OpenAPIRequest();
 			set(s);
 		}
 		

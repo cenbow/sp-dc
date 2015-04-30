@@ -1,5 +1,6 @@
 package kr.co.inogard.springboot.dc.domain;
 
+import java.io.Serializable;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -7,7 +8,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.IdClass;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
@@ -15,25 +15,12 @@ import lombok.Data;
 
 @Entity
 @Data
-@IdClass(ResponseSFROA0802DomainKey.class)
 @Table(name="ResponseSFROA0802")
-public class ResponseSFROA0802Domain {
+public class ResponseSFROA0802Domain implements Serializable {
 	
+	private static final long serialVersionUID = 1448570673770028678L;
+
 	@Id
-	@Column(name="groupId")
-	private String groupId;
-	
-	@Id
-	@Column(name="requestSeq")
-	private int requestSeq;
-	
-	@Id
-//	@GeneratedValue(strategy=GenerationType.AUTO)
-//	@GeneratedValue(strategy=GenerationType.IDENTITY)
-//	@GeneratedValue(strategy=GenerationType.SEQUENCE)
-	@Column(name="seq")
-	private Integer seq;
-	
 	@Column(name="bidNo", length=40)
 	private String bidNo;
 	
@@ -51,6 +38,9 @@ public class ResponseSFROA0802Domain {
 	
 	@Column(name="annStdDoc1", length=400)
 	private String annStdDoc1;
+	
+	@Column(name="transferYn", length=1)
+	private String transferYn;
 	
 	@OneToMany(fetch=FetchType.LAZY
 			, mappedBy="responseSFROA0802Domain"

@@ -7,6 +7,16 @@
         </layout>
     </appender>
 
+	<timestamp key="bySecond" datePattern="yyyyMMdd'T'HHmmss" />
+	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<file>C:/java/openapi/logs/log-${bySecond}.txt</file>
+		<append>true</append>
+		<encoder>
+			<pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n
+			</pattern>
+		</encoder>
+	</appender>
+
     <logger name="kr.co.inogard.springboot.dc" level="debug"/>
     
     <logger name="org.springframework.core" level="info"/>
@@ -16,6 +26,7 @@
     
     <root level="debug">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
     </root>
   
 </configuration>

@@ -8,7 +8,7 @@ import javax.persistence.Table;
 
 import lombok.Data;
 
-@Entity
+@Entity(name="RequestSFROA0802")
 @Data
 @IdClass(RequestSFROA0802DomainKey.class)
 @Table(name="RequestSFROA0802")
@@ -19,9 +19,6 @@ public class RequestSFROA0802Domain {
 	private String groupId;
 	
 	@Id
-//	@GeneratedValue(strategy=GenerationType.AUTO)
-//	@GeneratedValue(strategy=GenerationType.IDENTITY)
-//	@GeneratedValue(strategy=GenerationType.SEQUENCE)
 	@Column(name="requestSeq")
 	private Integer requestSeq;
 	
@@ -50,6 +47,24 @@ public class RequestSFROA0802Domain {
 	private String eDate;
 	
 	/**
+	 * 결과코드
+	 */
+	@Column(name="resultCode", length=2)
+	private String resultCode;
+	
+	/**
+	 * 결과메세지
+	 */
+	@Column(name="resultMsg", length=50)
+	private String resultMsg;
+	
+	/**
+	 * 전체 결과 수
+	 */
+	@Column(name="totalCount")
+	private int totalCount;
+	
+	/**
 	 * 발주기관(예 : 서울시)
 	 */
 	@Column(name="orderCode", length=100)
@@ -66,5 +81,23 @@ public class RequestSFROA0802Domain {
 	 */
 	@Column(name="dateType", length=1)
 	private String dateType;
+	
+	/**
+	 * Hash 값
+	 */
+	@Column(name="hashCode", length=100)
+	private String hashCode;
+	
+	/**
+	 * Batch의 Jab 실행 ID
+	 */
+	@Column(name="jobExecutionId")
+	private long jobExecutionId;
+	
+	/**
+	 * Batch의 Jab 실행 ID
+	 */
+	@Column(name="jobExecutionStatus", length=10)
+	private String jobExecutionStatus;
 	
 }

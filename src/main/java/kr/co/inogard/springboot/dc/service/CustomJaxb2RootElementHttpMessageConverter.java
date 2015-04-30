@@ -11,6 +11,8 @@ import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamSource;
 
+import kr.co.inogard.springboot.dc.domain.OpenAPIRequest;
+
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +53,13 @@ public class CustomJaxb2RootElementHttpMessageConverter extends Jaxb2RootElement
 			// Open API로부터 받은 Raw 내용을 파일로 저장한다.
 			try {
 				inputStream = (InputStream)new ByteArrayInputStream(_copy.toByteArray());
-				log.debug("Raw XML file path "+agentRootDirectory+OpenAPIContext.get()+".xml");
-				File file = new File(agentRootDirectory+OpenAPIContext.get()+".xml");
+				
+				OpenAPIRequest openAPIRequest = OpenAPIContext.get();
+				
+				String tempFileName = openAPIRequest.getGroupId()+"_"+openAPIRequest.getRequestSeq();
+				
+				log.debug("Raw XML file path "+agentRootDirectory+tempFileName+".xml");
+				File file = new File(agentRootDirectory+tempFileName+".xml");
 				org.apache.commons.io.FileUtils.writeByteArrayToFile(file, _copy.toByteArray());
 			} catch (Exception e) {
 				log.error("Raw XML file save error", e);

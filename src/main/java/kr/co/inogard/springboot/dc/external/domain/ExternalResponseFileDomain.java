@@ -1,9 +1,10 @@
 package kr.co.inogard.springboot.dc.external.domain;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
 import javax.persistence.ManyToOne;
@@ -13,22 +14,11 @@ import lombok.Data;
 
 @Entity
 @Data
-@IdClass(ExternalResponseFileDomainKey.class)
 @Table(name="ExternalResponseFile")
-public class ExternalResponseFileDomain {
+public class ExternalResponseFileDomain implements Serializable {
+	
+	private static final long serialVersionUID = 873526847731037614L;
 
-	@Id
-	@Column(name="groupId")
-	private String groupId;
-	
-	@Id
-	@Column(name="requestSeq")
-	private int requestSeq;
-	
-	@Id
-	@Column(name="seq")
-	private Integer seq;
-	
 	@Id
 	@Column(name="url")
 	private String url;
@@ -41,9 +31,7 @@ public class ExternalResponseFileDomain {
 	
 	@ManyToOne
 	@JoinColumns({
-			@JoinColumn(name="groupId", referencedColumnName="groupId", nullable=false, insertable=false, updatable=false), 
-			@JoinColumn(name="requestSeq", referencedColumnName="requestSeq", nullable=false, insertable=false, updatable=false),
-			@JoinColumn(name="seq", referencedColumnName="seq", nullable=false, insertable=false, updatable=false)
+			@JoinColumn(name="url", referencedColumnName="annStdDoc1", nullable=false, insertable=false, updatable=false)
 		})
 	private ExternalResponseSFROA0802Domain externalResponseSFROA0802Domain;
 }

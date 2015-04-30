@@ -40,7 +40,7 @@ public class AnnStdDocAsyncDownloadService {
         HttpHeaders httpHeaders = restTemplate.headForHeaders(new URI(responseFileDomain.getUrl()));
         
         String contentDisposition = httpHeaders.getFirst(httpHeaders.CONTENT_DISPOSITION);
-//        log.debug("RAW "+httpHeaders.CONTENT_DISPOSITION+" "+contentDisposition);
+        log.debug("RAW "+httpHeaders.CONTENT_DISPOSITION+" "+contentDisposition);
         
         String keyWord = "filename=\"";
         int idx = contentDisposition.indexOf(keyWord);
@@ -61,7 +61,7 @@ public class AnnStdDocAsyncDownloadService {
         
         responseFileDomain.setFilePath(file.getAbsolutePath());
         
-        System.out.println("ResponseFileDomain DB 저장 "+responseFileDomain);
+        log.debug("ResponseFileDomain DB 저장 "+responseFileDomain);
         responseFileRepository.saveAndFlush(responseFileDomain);
         
         return new AsyncResult<ResponseFileDomain>(responseFileDomain);

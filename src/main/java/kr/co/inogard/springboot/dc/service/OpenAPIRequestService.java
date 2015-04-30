@@ -90,9 +90,11 @@ public class OpenAPIRequestService {
 		} catch (RestClientException e) {
 			e.printStackTrace();
 			log.error("RestClientException", e);
+			throw e;
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 			log.error("URISyntaxException", e);
+			throw e;
 		}
 		
 		log.info("ResultCode = "	+ response.getHeader().getResultCode());

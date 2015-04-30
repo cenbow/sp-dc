@@ -38,13 +38,14 @@ public class ResponseFileItemReader extends JpaPagingItemReader<ResponseFileDoma
 		System.out.println("====================================");
     	
     	JpaNativeQueryProvider<ResponseFileDomain> jpaNativeQueryProvider= new JpaNativeQueryProvider<ResponseFileDomain>();
-    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseFile WHERE groupId=:groupId");
+//    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseFile WHERE groupId=:groupId");
+    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseFile");
     	jpaNativeQueryProvider.setEntityClass(ResponseFileDomain.class);
     	jpaNativeQueryProvider.afterPropertiesSet();
     	
 		super.setEntityManagerFactory(datasourceOneEntityManager);
 		super.setQueryProvider(jpaNativeQueryProvider);
-		super.setParameterValues(mapParam);
+//		super.setParameterValues(mapParam);
 		super.setPageSize(10);
 		super.afterPropertiesSet();
 		super.setSaveState(true);

@@ -38,13 +38,14 @@ public class ResponseSFROA0802ItemReader extends JpaPagingItemReader<ResponseSFR
 		System.out.println("====================================");
     	
     	JpaNativeQueryProvider<ResponseSFROA0802Domain> jpaNativeQueryProvider= new JpaNativeQueryProvider<ResponseSFROA0802Domain>();
-    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseSFROA0802 WHERE groupId=:groupId");
+//    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseSFROA0802 WHERE groupId=:groupId");
+    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseSFROA0802 WHERE transferYn != 'Y'");
     	jpaNativeQueryProvider.setEntityClass(ResponseSFROA0802Domain.class);
     	jpaNativeQueryProvider.afterPropertiesSet();
     	
 		super.setEntityManagerFactory(datasourceOneEntityManager);
 		super.setQueryProvider(jpaNativeQueryProvider);
-		super.setParameterValues(mapParam);
+//		super.setParameterValues(mapParam);
 		super.setPageSize(10);
 		super.afterPropertiesSet();
 		super.setSaveState(true);
