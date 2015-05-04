@@ -209,7 +209,7 @@ public class RequestSFROA0802Service {
 			jobRepositoryFactoryBean.setDataSource(dataSource);
 			JobRepository jobRepository = jobRepositoryFactoryBean.getObject();
 			
-			SimpleAsyncTaskExecutor simpleAsyncTaskExecutor = getSimpleAsyncTaskExecutor();
+			SimpleAsyncTaskExecutor simpleAsyncTaskExecutor = new SimpleAsyncTaskExecutor();
 			
 			SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
 	        simpleJobLauncher.setJobRepository(jobRepository);
@@ -244,7 +244,6 @@ public class RequestSFROA0802Service {
 	        
 	        JobExecutionListener[] arrListener = {responseSFROA0802JobExecutionListener};
 	        
-//	        Job job = this.job();
 	        SimpleJob job = new SimpleJob();
 	        job.setName("responseSFROA0802ExportToExternal");
 	        job.setJobExecutionListeners(arrListener);
@@ -360,19 +359,6 @@ public class RequestSFROA0802Service {
 		}
 		
 		return response;
-	}
-	
-	@Bean
-	public SimpleAsyncTaskExecutor getSimpleAsyncTaskExecutor(){
-		return new SimpleAsyncTaskExecutor();
-	}
-	
-	@Bean
-	public Job job() throws Exception {
-		return jobBuilderFactory.get("responseSFROA0802ExportToExternal")
-	                            .start(step1())
-	                            .listener(responseSFROA0802JobExecutionListener)
-	                            .build();
 	}
 	
 	@Bean
