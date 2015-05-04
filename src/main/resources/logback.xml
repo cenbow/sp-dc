@@ -12,7 +12,7 @@
 		<file>C:/java/openapi/logs/log-${bySecond}.txt</file>
 		<append>true</append>
 		<encoder>
-			<pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n
+			<pattern>%d{HH:mm:ss} [%thread] %-5level %logger{35} - %msg%n
 			</pattern>
 		</encoder>
 	</appender>

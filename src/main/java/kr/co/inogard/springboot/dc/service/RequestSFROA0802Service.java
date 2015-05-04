@@ -269,8 +269,6 @@ public class RequestSFROA0802Service {
 		// 사용이 끝나면 삭제하기
 		OpenAPIContext.reset();
 		
-		Thread.sleep(15000);
-		
 		log.debug("#############################");
 		log.debug("업무 끝");
 		log.debug("#############################");	

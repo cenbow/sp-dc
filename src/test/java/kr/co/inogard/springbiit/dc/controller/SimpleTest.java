@@ -15,6 +15,6 @@ public class SimpleTest {
 
 	@Test
 	public void test() throws Exception {
-		Thread.sleep(30000); // 30초 지연
+		Thread.sleep(60000); // 1분(60초) 지연(Cron으로 1분마다 실행하는 서비스를 테스트하니까 최대 1분 지연)
 	}
 }

@@ -284,7 +284,7 @@ public class DataGovControllerTest {
 	        requestSFROA0802Repository.saveAndFlush(requestSFROA0802Domain);
 		}
 		
-		Thread.sleep(30000);
+//		Thread.sleep(30000);
 		
 		// 사용이 끝나면 삭제하기
 		OpenAPIContext.reset();
