@@ -28,7 +28,6 @@ import kr.co.inogard.springboot.dc.service.AnnStdDocAsyncDownloadService;
 import kr.co.inogard.springboot.dc.service.OpenAPIContext;
 import kr.co.inogard.springboot.dc.service.OpenAPIRequestService;
 import kr.co.inogard.springboot.dc.service.Paging;
-import kr.co.inogard.springboot.dc.service.RequestSFROA0802Service;
 import kr.co.inogard.springboot.dc.service.ResponseFileItemProcessor;
 import kr.co.inogard.springboot.dc.service.ResponseFileItemReader;
 import kr.co.inogard.springboot.dc.service.ResponseSFROA0802ItemProcessor;
@@ -43,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.Step;
@@ -50,14 +50,19 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.converter.DefaultJobParametersConverter;
 import org.springframework.batch.core.converter.JobParametersConverter;
+import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
+import org.springframework.batch.integration.async.AsyncItemProcessor;
+import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.database.JpaItemWriter;
+import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -131,6 +136,9 @@ public class DataGovControllerTest {
 	@Autowired
 	@Qualifier("responseFileItemReader")
 	private ResponseFileItemReader responseFileItemReader;
+	
+	@Autowired
+	private ResponseFileItemProcessor responseFileItemProcessor;
 
 	@Test
 	public void getData() throws Exception {
@@ -185,31 +193,98 @@ public class DataGovControllerTest {
 		responseFileRepository.flush();
 		responseSFROA0802Repository.flush();
 		
-		if(listDownloadFileCandidate.size() > 0){
-			try {
-				log.debug("#############################");
-				log.debug("비동기 호출 시작");
-				log.debug("#############################");
-				
-				for(ResponseFileDomain responseFileDomain : listDownloadFileCandidate){
-					Future<ResponseFileDomain> future = annStdDocAsyncDownloadService.download(responseFileDomain);
-					if(future.isDone()){
-						log.debug("######## 비동기 작업 완료 ########");
-					}
-				}
-				log.debug("#############################");
-				log.debug("비동기 호출 끝");
-				log.debug("#############################");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+//		if(listDownloadFileCandidate.size() > 0){
+//			try {
+//				log.debug("#############################");
+//				log.debug("비동기 호출 시작");
+//				log.debug("#############################");
+//				
+//				for(ResponseFileDomain responseFileDomain : listDownloadFileCandidate){
+//					Future<ResponseFileDomain> future = annStdDocAsyncDownloadService.download(responseFileDomain);
+//					if(future.isDone()){
+//						log.debug("######## 비동기 작업 완료 ########");
+//					}
+//				}
+//				log.debug("#############################");
+//				log.debug("비동기 호출 끝");
+//				log.debug("#############################");
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
 		
 		if(listResponse.size() > 0){
-			runBatch(timestamp);
+			// Batch 시작
+			Properties prop = new Properties();
+			prop.setProperty("groupId", timestamp);
+			
+			JobParametersConverter jobParametersConverter = new DefaultJobParametersConverter();
+			JobParameters jobParameters = jobParametersConverter.getJobParameters(prop);
+			
+			JobRepositoryFactoryBean jobRepositoryFactoryBean = new JobRepositoryFactoryBean();
+			jobRepositoryFactoryBean.setTransactionManager(datasourceOneTransactionManager);
+			jobRepositoryFactoryBean.setDataSource(dataSource);
+			JobRepository jobRepository = jobRepositoryFactoryBean.getObject();
+			
+			SimpleAsyncTaskExecutor simpleAsyncTaskExecutor = new SimpleAsyncTaskExecutor();
+			
+			SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
+	        simpleJobLauncher.setJobRepository(jobRepository);
+	        simpleJobLauncher.setTaskExecutor(simpleAsyncTaskExecutor);
+	        simpleJobLauncher.afterPropertiesSet();
+	        
+	        List<Step> listStep = new ArrayList<>();
+	        listStep.add(step1());
+	        if(listDownloadFileCandidate.size() > 0){
+		        ListItemReader<ResponseFileDomain> listItemReader = new ListItemReader<>(listDownloadFileCandidate);
+		        
+		        AsyncItemProcessor asyncItemProcessor = new AsyncItemProcessor();
+		        asyncItemProcessor.setDelegate(responseFileItemProcessor);
+		        asyncItemProcessor.setTaskExecutor(simpleAsyncTaskExecutor);
+		        
+		        AsyncItemWriter asyncItemWriter = new AsyncItemWriter();
+		    	JpaItemWriter<ExternalResponseFileDomain> writer = new JpaItemWriter();
+				writer.setEntityManagerFactory(datasourceTwoEntityManager);
+				asyncItemWriter.setDelegate(writer);
+		        
+		        Step step = ((SimpleStepBuilder<ResponseFileDomain, ExternalResponseFileDomain>) stepBuilderFactory.get("responseFileDomainTransfer")
+		                .<ResponseFileDomain, ExternalResponseFileDomain> chunk(100) // 읽기/쓰기 단위
+		                .transactionManager(datasourceTwoTransactionManager))
+		                .reader(listItemReader)
+		                .writer(asyncItemWriter)
+		                .processor(asyncItemProcessor)
+		                .chunk(10)
+		                .build();
+		        
+		        listStep.add(step);
+	        }
+	        
+	        JobExecutionListener[] arrListener = {responseSFROA0802JobExecutionListener};
+	        
+//	        Job job = this.job();
+	        SimpleJob job = new SimpleJob();
+	        job.setName("responseSFROA0802ExportToExternal");
+	        job.setJobExecutionListeners(arrListener);
+	        job.setSteps(listStep);
+	        job.setJobRepository(jobRepository);
+	        
+	        JobExecution execution = simpleJobLauncher.run(job(), jobParameters);
+	        log.debug("execution.getId() = " + execution.getId());
+	        log.debug("Exit Status : " + execution.getStatus());
+	        
+	        
+	        openAPIRequest = OpenAPIContext.get();
+			RequestSFROA0802DomainKey id = new RequestSFROA0802DomainKey();
+			id.setGroupId(openAPIRequest.getGroupId());
+			id.setRequestSeq(openAPIRequest.getRequestSeq());
+			
+			RequestSFROA0802Domain requestSFROA0802Domain = requestSFROA0802Repository.findOne(id);
+	        requestSFROA0802Domain.setJobExecutionId(execution.getId());
+	        requestSFROA0802Domain.setJobExecutionStatus(execution.getStatus().toString());
+	        requestSFROA0802Repository.saveAndFlush(requestSFROA0802Domain);
 		}
 		
-		Thread.sleep(15000);
+		Thread.sleep(30000);
 		
 		// 사용이 끝나면 삭제하기
 		OpenAPIContext.reset();
@@ -306,43 +381,6 @@ public class DataGovControllerTest {
 		
 		return response;
 	}
-
-	private void runBatch(String timestamp) throws Exception,
-			JobExecutionAlreadyRunningException, JobRestartException,
-			JobInstanceAlreadyCompleteException, JobParametersInvalidException {
-		// Batch 시작
-		Properties prop = new Properties();
-		prop.setProperty("groupId", timestamp);
-		
-		JobParametersConverter jobParametersConverter = new DefaultJobParametersConverter();
-		JobParameters jobParameters = jobParametersConverter.getJobParameters(prop);
-		
-		JobRepositoryFactoryBean jobRepositoryFactoryBean = new JobRepositoryFactoryBean();
-		jobRepositoryFactoryBean.setTransactionManager(datasourceOneTransactionManager);
-		jobRepositoryFactoryBean.setDataSource(dataSource);
-		
-		SimpleAsyncTaskExecutor simpleAsyncTaskExecutor = new SimpleAsyncTaskExecutor();
-		
-		SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
-        simpleJobLauncher.setJobRepository(jobRepositoryFactoryBean.getObject());
-        simpleJobLauncher.setTaskExecutor(simpleAsyncTaskExecutor);
-        simpleJobLauncher.afterPropertiesSet();
-        
-        JobExecution execution = simpleJobLauncher.run(job(), jobParameters);
-        log.debug("execution.getId() = " + execution.getId());
-        log.debug("Exit Status : " + execution.getStatus());
-        
-        
-        OpenAPIRequest openAPIRequest = OpenAPIContext.get();
-		RequestSFROA0802DomainKey id = new RequestSFROA0802DomainKey();
-		id.setGroupId(openAPIRequest.getGroupId());
-		id.setRequestSeq(openAPIRequest.getRequestSeq());
-		
-		RequestSFROA0802Domain requestSFROA0802Domain = requestSFROA0802Repository.findOne(id);
-        requestSFROA0802Domain.setJobExecutionId(execution.getId());
-        requestSFROA0802Domain.setJobExecutionStatus(execution.getStatus().toString());
-        requestSFROA0802Repository.saveAndFlush(requestSFROA0802Domain);
-	}
 	
 	@Bean
 	public Job job() throws Exception {
@@ -376,31 +414,6 @@ public class DataGovControllerTest {
 	@Bean
 	public ItemProcessor<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> responseSFROA0802Processor() {
         return new ResponseSFROA0802ItemProcessor();
-    }
-	
-	@Bean
-	public Step step2() throws Exception {
-		return ((SimpleStepBuilder<ResponseFileDomain, ExternalResponseFileDomain>) stepBuilderFactory.get("responseFileDomainTransfer")
-                .<ResponseFileDomain, ExternalResponseFileDomain> chunk(100) // 읽기/쓰기 단위
-                .transactionManager(datasourceTwoTransactionManager))
-                .reader(responseFileItemReader)
-                .writer(responseFileWriter())
-                .processor(responseFileProcessor())
-//                .taskExecutor(responseExecutor)
-//                .throttleLimit(2) // 동시실행 쓰레드 갯수
-                .build();
-	}
-	
-	@Bean
-	public JpaItemWriter<ExternalResponseFileDomain> responseFileWriter() {
-    	JpaItemWriter writer = new JpaItemWriter();
-		writer.setEntityManagerFactory(datasourceTwoEntityManager);
-	    return writer;
-	}
-	
-	@Bean
-	public ItemProcessor<ResponseFileDomain, ExternalResponseFileDomain> responseFileProcessor() {
-        return new ResponseFileItemProcessor();
     }
 	
 	public <T> T getBeanInstance(Class<T> clazz){

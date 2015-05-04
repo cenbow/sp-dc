@@ -20,7 +20,7 @@ public class RequestSFROA0802Schedule {
 	@Autowired
 	private RequestSFROA0802Service requestSFROA0802Service;
 	
-//	@Scheduled(fixedRate = 60000)
+	@Scheduled(fixedRate = 60000)
 	public void run() throws Exception{
 		
 		StopWatch stopWatch = new StopWatch();

@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.Future;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
@@ -19,6 +18,7 @@ import kr.co.inogard.springboot.dc.domain.Response;
 import kr.co.inogard.springboot.dc.domain.ResponseFileDomain;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802Domain;
+import kr.co.inogard.springboot.dc.external.domain.ExternalResponseFileDomain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseSFROA0802Domain;
 import kr.co.inogard.springboot.dc.repository.RequestSFROA0802Repository;
 import kr.co.inogard.springboot.dc.utils.FileUtil;
@@ -27,17 +27,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.converter.DefaultJobParametersConverter;
 import org.springframework.batch.core.converter.JobParametersConverter;
+import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
+import org.springframework.batch.integration.async.AsyncItemProcessor;
+import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.database.JpaItemWriter;
+import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -105,6 +111,9 @@ public class RequestSFROA0802Service {
 	private ResponseSFROA0802JobExecutionListener responseSFROA0802JobExecutionListener;
 	
 	@Autowired
+	private ResponseFileItemProcessor responseFileItemProcessor;
+	
+	@Autowired
 	@Qualifier("datasourceTwoEntityManager")
 	private EntityManagerFactory datasourceTwoEntityManager;
 	
@@ -139,11 +148,9 @@ public class RequestSFROA0802Service {
 		List<ResponseSFROA0802> listResponse = new ArrayList();
 		
 		Response response = this.getDataFromOpenAPI(subUrl, request, listResponse);
-		System.out.println("TotalResultCount : " + listResponse.size());
 		
 		List<ResponseFileDomain> listDownloadFileCandidate = new ArrayList<>();
 		for(ResponseSFROA0802 responseSFROA0802 : listResponse){
-			System.out.println(responseSFROA0802);
 			
 			ResponseSFROA0802Domain responseSFROA0802Domain = new ResponseSFROA0802Domain();
 			BeanUtils.copyProperties(responseSFROA0802, responseSFROA0802Domain);
@@ -164,25 +171,25 @@ public class RequestSFROA0802Service {
 		responseFileRepository.flush();
 		responseSFROA0802Repository.flush();
 		
-		if(listDownloadFileCandidate.size() > 0){
-			try {
-				System.out.println("#############################");
-				System.out.println("비동기 호출 시작");
-				System.out.println("#############################");
-				
-				for(ResponseFileDomain responseFileDomain : listDownloadFileCandidate){
-					Future<ResponseFileDomain> future = annStdDocAsyncDownloadService.download(responseFileDomain);
-					if(future.isDone()){
-						System.out.println("######## 비동기 작업 완료 ########");
-					}
-				}
-				System.out.println("#############################");
-				System.out.println("비동기 호출 끝");
-				System.out.println("#############################");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+//		if(listDownloadFileCandidate.size() > 0){
+//			try {
+//				log.debug("#############################");
+//				log.debug("비동기 호출 시작");
+//				log.debug("#############################");
+//				
+//				for(ResponseFileDomain responseFileDomain : listDownloadFileCandidate){
+//					Future<ResponseFileDomain> future = annStdDocAsyncDownloadService.download(responseFileDomain);
+//					if(future.isDone()){
+//						log.debug("######## 비동기 작업 완료 ########");
+//					}
+//				}
+//				log.debug("#############################");
+//				log.debug("비동기 호출 끝");
+//				log.debug("#############################");
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
 		
 		if(listResponse.size() > 0){
 			Properties prop = new Properties();
@@ -200,18 +207,53 @@ public class RequestSFROA0802Service {
 			JobRepositoryFactoryBean jobRepositoryFactoryBean = new JobRepositoryFactoryBean();
 			jobRepositoryFactoryBean.setTransactionManager(datasourceOneTransactionManager);
 			jobRepositoryFactoryBean.setDataSource(dataSource);
+			JobRepository jobRepository = jobRepositoryFactoryBean.getObject();
 			
 			SimpleAsyncTaskExecutor simpleAsyncTaskExecutor = getSimpleAsyncTaskExecutor();
 			
 			SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
-	        simpleJobLauncher.setJobRepository(jobRepositoryFactoryBean.getObject());
+	        simpleJobLauncher.setJobRepository(jobRepository);
 	        simpleJobLauncher.setTaskExecutor(simpleAsyncTaskExecutor);
 	        simpleJobLauncher.afterPropertiesSet();
 	        
-	        JobExecution execution = simpleJobLauncher.run(job(), jobParameters);
-	        System.out.println("execution.getId() = " + execution.getId());
-	        System.out.println("Exit Status : " + execution.getStatus());
+	        List<Step> listStep = new ArrayList<>();
+	        listStep.add(step1());
+	        if(listDownloadFileCandidate.size() > 0){
+		        ListItemReader<ResponseFileDomain> listItemReader = new ListItemReader<>(listDownloadFileCandidate);
+		        
+		        AsyncItemProcessor asyncItemProcessor = new AsyncItemProcessor();
+		        asyncItemProcessor.setDelegate(responseFileItemProcessor);
+		        asyncItemProcessor.setTaskExecutor(simpleAsyncTaskExecutor);
+		        
+		        AsyncItemWriter asyncItemWriter = new AsyncItemWriter();
+		    	JpaItemWriter<ExternalResponseFileDomain> writer = new JpaItemWriter();
+				writer.setEntityManagerFactory(datasourceTwoEntityManager);
+				asyncItemWriter.setDelegate(writer);
+		        
+		        Step step = ((SimpleStepBuilder<ResponseFileDomain, ExternalResponseFileDomain>) stepBuilderFactory.get("responseFileDomainTransfer")
+		                .<ResponseFileDomain, ExternalResponseFileDomain> chunk(100) // 읽기/쓰기 단위
+		                .transactionManager(datasourceTwoTransactionManager))
+		                .reader(listItemReader)
+		                .writer(asyncItemWriter)
+		                .processor(asyncItemProcessor)
+		                .chunk(10)
+		                .build();
+		        
+		        listStep.add(step);
+	        }
 	        
+	        JobExecutionListener[] arrListener = {responseSFROA0802JobExecutionListener};
+	        
+//	        Job job = this.job();
+	        SimpleJob job = new SimpleJob();
+	        job.setName("responseSFROA0802ExportToExternal");
+	        job.setJobExecutionListeners(arrListener);
+	        job.setSteps(listStep);
+	        job.setJobRepository(jobRepository);
+	        
+	        JobExecution execution = simpleJobLauncher.run(job, jobParameters);
+	        log.debug("execution.getId() = " + execution.getId());
+	        log.debug("Exit Status : " + execution.getStatus());
 	        
 			openAPIRequest = OpenAPIContext.get();
 			RequestSFROA0802DomainKey id = new RequestSFROA0802DomainKey();
@@ -229,9 +271,9 @@ public class RequestSFROA0802Service {
 		
 		Thread.sleep(15000);
 		
-		System.out.println("#############################");
-		System.out.println("업무 끝");
-		System.out.println("#############################");	
+		log.debug("#############################");
+		log.debug("업무 끝");
+		log.debug("#############################");	
 	}
 	
 	public Response getDataFromOpenAPI(String subUrl, RequestSFROA0802 request, List<ResponseSFROA0802> listResponse) throws Exception{
@@ -240,18 +282,18 @@ public class RequestSFROA0802Service {
 		BeanUtils.copyProperties(request, requestSFROA0802Domain);
 		
 		// 조회조건 저장
-		System.out.println("RequestSFROA0802Domain.getGroupId() = " + requestSFROA0802Domain.getGroupId());
-		System.out.println("RequestSFROA0802Domain.getRequestSeq() = " + requestSFROA0802Domain.getRequestSeq());
-		System.out.println("RequestSFROA0802Domain.getOrderCode() = " + requestSFROA0802Domain.getOrderCode());
+		log.debug("RequestSFROA0802Domain.getGroupId() = " + requestSFROA0802Domain.getGroupId());
+		log.debug("RequestSFROA0802Domain.getRequestSeq() = " + requestSFROA0802Domain.getRequestSeq());
+		log.debug("RequestSFROA0802Domain.getOrderCode() = " + requestSFROA0802Domain.getOrderCode());
 		requestSFROA0802Repository.save(requestSFROA0802Domain);
 		
 		// 조회
 		Response response = openAPIRequestService.request(subUrl, request);
-		System.out.println("ResultCode = "	+ response.getHeader().getResultCode());
-		System.out.println("ResultMsg = " 	+ response.getHeader().getResultMsg());
-		System.out.println("NumOfRows = " 	+ response.getBody().getNumOfRows());
-		System.out.println("PageNo = " 		+ response.getBody().getPageNo());
-		System.out.println("TotalCount = " 	+ response.getBody().getTotalCount());
+		log.debug("ResultCode = "	+ response.getHeader().getResultCode());
+		log.debug("ResultMsg = " 	+ response.getHeader().getResultMsg());
+		log.debug("NumOfRows = " 	+ response.getBody().getNumOfRows());
+		log.debug("PageNo = " 		+ response.getBody().getPageNo());
+		log.debug("TotalCount = " 	+ response.getBody().getTotalCount());
 		
 		// 조회조건 결과 저장
 		requestSFROA0802Domain.setResultCode(response.getHeader().getResultCode());
@@ -274,14 +316,14 @@ public class RequestSFROA0802Service {
 						existRequestSFROA0802Domain.setHashCode("");
 					}
 					
-					System.out.println("#########################################");
-					System.out.println("["+existRequestSFROA0802Domain.getHashCode()+"]equals["+requestSFROA0802Domain.getHashCode()+"]");
+					log.debug("#########################################");
+					log.debug("["+existRequestSFROA0802Domain.getHashCode()+"]equals["+requestSFROA0802Domain.getHashCode()+"]");
 					// Hash값이 같다면(똑같은 내용이라면 여러번 작업할 이유가 없으므로)
 					if(existRequestSFROA0802Domain.getHashCode().equals(requestSFROA0802Domain.getHashCode())){
 						bolWork = false;
 					}
-					System.out.println(Boolean.toString(bolWork));
-					System.out.println("#########################################");
+					log.debug(Boolean.toString(bolWork));
+					log.debug("#########################################");
 				}
 			}
 			
@@ -344,8 +386,6 @@ public class RequestSFROA0802Service {
                 .writer(responseSFROA0802Writer())
                 .processor(responseSFROA0802Processor())
                 .listener(responseSFROA0802ItemWriterListener)
-//                .taskExecutor(responseExecutor)
-//                .throttleLimit(2) // 동시실행 쓰레드 갯수
                 .build();
 	}
 	

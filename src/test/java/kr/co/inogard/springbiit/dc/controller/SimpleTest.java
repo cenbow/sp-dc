@@ -15,6 +15,6 @@ public class SimpleTest {
 
 	@Test
 	public void test() throws Exception {
-//		Thread.sleep(15000); // 15초 지연
+		Thread.sleep(30000); // 30초 지연
 	}
 }
