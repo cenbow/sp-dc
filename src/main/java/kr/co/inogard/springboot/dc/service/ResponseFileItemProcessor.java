@@ -34,6 +34,11 @@ public class ResponseFileItemProcessor implements ItemProcessor<ResponseFileDoma
     	
     	log.debug("첨부파일 다운로드 "+responseFileDomain.getUrl());
     	
+    	// TODO : 테스트 후 삭제
+    	if("http://www.g2b.go.kr:8081/ep/co/fileDownload.do?fileTask=NOTIFY&fileSeq=20150423510::00::1::1".equals(responseFileDomain.getUrl())){
+    		throw new Exception("오류 메일이 발송되는지 테스트");
+    	}
+    	
     	Assert.notNull(responseFileDomain.getUrl(), "'url' must not be null");
     	
         RestTemplate restTemplate = new RestTemplate();

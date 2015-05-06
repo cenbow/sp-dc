@@ -34,7 +34,7 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.converter.DefaultJobParametersConverter;
 import org.springframework.batch.core.converter.JobParametersConverter;
-import org.springframework.batch.core.job.SimpleJob;
+import org.springframework.batch.core.job.flow.FlowExecutionStatus;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
@@ -112,6 +112,9 @@ public class RequestSFROA0802Service {
 	
 	@Autowired
 	private ResponseFileItemProcessor responseFileItemProcessor;
+	
+	@Autowired
+	private ResponseSFROA802ErrorMailSendTasklet responseSFROA802ErrorMailSendTasklet;
 	
 	@Autowired
 	@Qualifier("datasourceTwoEntityManager")
@@ -216,39 +219,51 @@ public class RequestSFROA0802Service {
 	        simpleJobLauncher.setTaskExecutor(simpleAsyncTaskExecutor);
 	        simpleJobLauncher.afterPropertiesSet();
 	        
-	        List<Step> listStep = new ArrayList<>();
-	        listStep.add(step1());
-	        if(listDownloadFileCandidate.size() > 0){
-		        ListItemReader<ResponseFileDomain> listItemReader = new ListItemReader<>(listDownloadFileCandidate);
-		        
-		        AsyncItemProcessor asyncItemProcessor = new AsyncItemProcessor();
-		        asyncItemProcessor.setDelegate(responseFileItemProcessor);
-		        asyncItemProcessor.setTaskExecutor(simpleAsyncTaskExecutor);
-		        
-		        AsyncItemWriter asyncItemWriter = new AsyncItemWriter();
-		    	JpaItemWriter<ExternalResponseFileDomain> writer = new JpaItemWriter();
-				writer.setEntityManagerFactory(datasourceTwoEntityManager);
-				asyncItemWriter.setDelegate(writer);
-		        
-		        Step step = ((SimpleStepBuilder<ResponseFileDomain, ExternalResponseFileDomain>) stepBuilderFactory.get("responseFileDomainTransfer")
-		                .<ResponseFileDomain, ExternalResponseFileDomain> chunk(100) // 읽기/쓰기 단위
-		                .transactionManager(datasourceTwoTransactionManager))
-		                .reader(listItemReader)
-		                .writer(asyncItemWriter)
-		                .processor(asyncItemProcessor)
-		                .chunk(10)
-		                .build();
-		        
-		        listStep.add(step);
-	        }
+//	        List<Step> listStep = new ArrayList<>();
+//	        listStep.add(this.responseSFROA0802DomainTransferStep());
 	        
-	        JobExecutionListener[] arrListener = {responseSFROA0802JobExecutionListener};
+	        ListItemReader<ResponseFileDomain> listItemReader = new ListItemReader<>(listDownloadFileCandidate);
 	        
-	        SimpleJob job = new SimpleJob();
-	        job.setName("responseSFROA0802ExportToExternal");
-	        job.setJobExecutionListeners(arrListener);
-	        job.setSteps(listStep);
-	        job.setJobRepository(jobRepository);
+	        AsyncItemProcessor asyncItemProcessor = new AsyncItemProcessor();
+	        asyncItemProcessor.setDelegate(responseFileItemProcessor);
+	        asyncItemProcessor.setTaskExecutor(simpleAsyncTaskExecutor);
+	        
+	        AsyncItemWriter asyncItemWriter = new AsyncItemWriter();
+	    	JpaItemWriter<ExternalResponseFileDomain> writer = new JpaItemWriter();
+			writer.setEntityManagerFactory(datasourceTwoEntityManager);
+			asyncItemWriter.setDelegate(writer);
+	        
+	        Step responseFileDomainTransferStep = ((SimpleStepBuilder<ResponseFileDomain, ExternalResponseFileDomain>) stepBuilderFactory.get("responseFileDomainTransfer")
+	                .<ResponseFileDomain, ExternalResponseFileDomain> chunk(100) // 읽기/쓰기 단위
+	                .transactionManager(datasourceTwoTransactionManager))
+	                .reader(listItemReader)
+	                .writer(asyncItemWriter)
+	                .processor(asyncItemProcessor)
+	                .build();
+	        
+//	        listStep.add(responseFileDomainTransferStep);
+	        
+	        Step responseSFROA802ErrorMailSendStep = stepBuilderFactory.get("responseSFROA802ErrorMailSend")
+	        		.tasklet(responseSFROA802ErrorMailSendTasklet)
+	        		.build();
+	        
+	        Job job = jobBuilderFactory.get("responseSFROA0802ExportToExternal")
+	        		.listener(responseSFROA0802JobExecutionListener)
+	        		.start(this.responseSFROA0802DomainTransferStep())
+	        		.on(FlowExecutionStatus.COMPLETED.getName())
+	        		.to(responseFileDomainTransferStep)
+	        		.on(FlowExecutionStatus.FAILED.getName())
+	        		.to(responseSFROA802ErrorMailSendStep)
+	        		.end()
+	        		.build();
+	        
+//	        JobExecutionListener[] arrListener = {responseSFROA0802JobExecutionListener};
+//	        
+//	        SimpleJob job = new SimpleJob();
+//	        job.setName("responseSFROA0802ExportToExternal");
+//	        job.setJobExecutionListeners(arrListener);
+//	        job.setSteps(listStep);
+//	        job.setJobRepository(jobRepository);
 	        
 	        JobExecution execution = simpleJobLauncher.run(job, jobParameters);
 	        log.debug("execution.getId() = " + execution.getId());
@@ -362,7 +377,7 @@ public class RequestSFROA0802Service {
 	}
 	
 	@Bean
-	public Step step1() throws Exception {
+	public Step responseSFROA0802DomainTransferStep() throws Exception {
 		return ((SimpleStepBuilder<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain>) stepBuilderFactory.get("responseSFROA0802DomainTransfer")
                 .<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> chunk(100) // 읽기/쓰기 단위
                 .transactionManager(datasourceTwoTransactionManager))
