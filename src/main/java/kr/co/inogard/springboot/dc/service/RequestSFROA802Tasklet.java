@@ -6,6 +6,7 @@ import java.util.List;
 
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802Domain;
+import kr.co.inogard.springboot.dc.domain.RequestSFROA0802DomainKey;
 import kr.co.inogard.springboot.dc.domain.Response;
 import kr.co.inogard.springboot.dc.domain.ResponseFileDomain;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802;
@@ -73,6 +74,17 @@ public class RequestSFROA802Tasklet implements Tasklet {
 		request.setEDate(eDate);
 		request.setOrderCode(orderCode);
 		
+		// JobExecutionId를 포함한 조회조건 저장
+		RequestSFROA0802Domain requestSFROA0802Domain = new RequestSFROA0802Domain();
+		BeanUtils.copyProperties(request, requestSFROA0802Domain);
+		
+		log.debug("JobExecutionId : "+chunkContext.getStepContext().getStepExecution().getJobExecutionId());
+		log.debug("Status : "+chunkContext.getStepContext().getStepExecution().getStatus().toString());
+		
+		requestSFROA0802Domain.setJobExecutionId(chunkContext.getStepContext().getStepExecution().getJobExecutionId());
+        requestSFROA0802Domain.setJobExecutionStatus(chunkContext.getStepContext().getStepExecution().getStatus().toString());
+		requestSFROA0802Repository.save(requestSFROA0802Domain);
+		
 		List<ResponseSFROA0802> listResponse = new ArrayList();
 		
 		Response response = this.getDataFromOpenAPI(subUrl, request, listResponse);
@@ -104,15 +116,22 @@ public class RequestSFROA802Tasklet implements Tasklet {
 	
 	public Response getDataFromOpenAPI(String subUrl, RequestSFROA0802 request, List<ResponseSFROA0802> listResponse) throws Exception{
 		
-		RequestSFROA0802Domain requestSFROA0802Domain = new RequestSFROA0802Domain();
-		BeanUtils.copyProperties(request, requestSFROA0802Domain);
-		
-		// 조회조건 저장
-		log.debug("RequestSFROA0802Domain.getGroupId() = " + requestSFROA0802Domain.getGroupId());
-		log.debug("RequestSFROA0802Domain.getRequestSeq() = " + requestSFROA0802Domain.getRequestSeq());
-		log.debug("RequestSFROA0802Domain.getOrderCode() = " + requestSFROA0802Domain.getOrderCode());
-		requestSFROA0802Repository.save(requestSFROA0802Domain);
-		
+		if(request.getRequestSeq() > 1){
+			RequestSFROA0802Domain requestSFROA0802Domain = new RequestSFROA0802Domain();
+			BeanUtils.copyProperties(request, requestSFROA0802Domain);
+			
+			// 조회조건 저장
+			log.debug("RequestSFROA0802Domain.getGroupId() = " + requestSFROA0802Domain.getGroupId());
+			log.debug("RequestSFROA0802Domain.getRequestSeq() = " + requestSFROA0802Domain.getRequestSeq());
+			log.debug("RequestSFROA0802Domain.getOrderCode() = " + requestSFROA0802Domain.getOrderCode());
+			requestSFROA0802Repository.save(requestSFROA0802Domain);
+		}
+
+		RequestSFROA0802DomainKey id = new RequestSFROA0802DomainKey();
+		id.setGroupId(request.getGroupId());
+		id.setRequestSeq(request.getRequestSeq());
+		RequestSFROA0802Domain requestSFROA0802Domain = requestSFROA0802Repository.findOne(id);
+
 		// 조회
 		Response response = openAPIRequestService.request(subUrl, request);
 		log.debug("ResultCode = "	+ response.getHeader().getResultCode());

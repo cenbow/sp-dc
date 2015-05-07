@@ -263,15 +263,7 @@ public class RequestSFROA0802Service {
 	        		.end()
 	        		.build();
 	        
-			RequestSFROA0802DomainKey id = new RequestSFROA0802DomainKey();
-			id.setGroupId(groupId);
-			id.setRequestSeq(1);
-			
-			RequestSFROA0802Domain requestSFROA0802Domain = requestSFROA0802Repository.findOne(id);
 			JobExecution execution = simpleJobLauncher.run(job, jobParameters);
-	        requestSFROA0802Domain.setJobExecutionId(execution.getId());
-	        requestSFROA0802Domain.setJobExecutionStatus(execution.getStatus().toString());
-	        requestSFROA0802Repository.saveAndFlush(requestSFROA0802Domain);
 //		}
 		
 		log.debug("#############################");
