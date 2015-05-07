@@ -1,7 +1,6 @@
 package kr.co.inogard.springboot.dc.service;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -10,7 +9,6 @@ import java.util.Properties;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
-import kr.co.inogard.springboot.dc.domain.OpenAPIRequest;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802Domain;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802DomainKey;
@@ -33,7 +31,9 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.converter.DefaultJobParametersConverter;
 import org.springframework.batch.core.converter.JobParametersConverter;
+import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.flow.FlowExecutionStatus;
+import org.springframework.batch.core.job.flow.support.SimpleFlow;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
@@ -41,8 +41,8 @@ import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.integration.async.AsyncItemProcessor;
 import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JpaItemWriter;
-import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -100,6 +100,9 @@ public class RequestSFROA0802Service {
 	private StepBuilderFactory stepBuilderFactory;
 	
 	@Autowired
+	private RequestSFROA802Tasklet requestSFROA802Tasklet;
+	
+	@Autowired
 	@Qualifier("responseSFROA0802ItemReader")
 	private ResponseSFROA0802ItemReader responseSFROA0802ItemReader;
 	
@@ -108,6 +111,9 @@ public class RequestSFROA0802Service {
 
 	@Autowired
 	private ResponseSFROA0802JobExecutionListener responseSFROA0802JobExecutionListener;
+	
+	@Autowired
+	private ResponseFileItemReader responseFileItemReader;
 	
 	@Autowired
 	private ResponseFileItemProcessor responseFileItemProcessor;
@@ -125,53 +131,47 @@ public class RequestSFROA0802Service {
 		Assert.notNull(eDate, "'eDate' must not be null");
 		Assert.notNull(orderCode, "'orderCode' must not be null");
 		
-		// 업무 트렌젝션(DB아님) 단위의 키로 사용할 값을 생성하여 OpenAPIContext에 담아서 같은 값을 사용할 수 있도록 함.
 		String groupId	= new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
-		int requestSeq 	= 1;
-		int pageSize 	= 200;
-		int pageNo 		= 1;
-		
-		OpenAPIRequest openAPIRequest = new OpenAPIRequest();
-		openAPIRequest.setGroupId(groupId);
-		openAPIRequest.setRequestSeq(requestSeq);
-		OpenAPIContext.set(openAPIRequest);
-		
-		String subUrl = "BidPublicInfoService/getInsttAcctoBidPblancListThng";
-		
-		RequestSFROA0802 request = new RequestSFROA0802();
-		request.setGroupId(groupId);
-		request.setRequestSeq(requestSeq);
-		request.setNumOfRows(pageSize);
-		request.setPageNo(pageNo);
-		request.setSDate(sDate);
-		request.setEDate(eDate);
-		request.setOrderCode(orderCode);
-		
-		List<ResponseSFROA0802> listResponse = new ArrayList();
-		
-		Response response = this.getDataFromOpenAPI(subUrl, request, listResponse);
-		
-		List<ResponseFileDomain> listDownloadFileCandidate = new ArrayList<>();
-		for(ResponseSFROA0802 responseSFROA0802 : listResponse){
-			
-			ResponseSFROA0802Domain responseSFROA0802Domain = new ResponseSFROA0802Domain();
-			BeanUtils.copyProperties(responseSFROA0802, responseSFROA0802Domain);
-			
-			responseSFROA0802Domain.setTransferYn("N");
-			responseSFROA0802Repository.save(responseSFROA0802Domain);
-			if(null != responseSFROA0802.getAnnStdDoc1()
-					&& !"".equals(responseSFROA0802.getAnnStdDoc1())){
-				
-				ResponseFileDomain responseFileDomain = new ResponseFileDomain();
-				responseFileDomain.setUrl(responseSFROA0802.getAnnStdDoc1());
-				
-				responseFileRepository.save(responseFileDomain);
-				
-				listDownloadFileCandidate.add(responseFileDomain);
-			}
-		}
-		responseFileRepository.flush();
-		responseSFROA0802Repository.flush();
+//		int requestSeq 	= 1;
+//		int pageSize 	= 200;
+//		int pageNo 		= 1;
+//		
+//		String subUrl = "BidPublicInfoService/getInsttAcctoBidPblancListThng";
+//		
+//		RequestSFROA0802 request = new RequestSFROA0802();
+//		request.setGroupId(groupId);
+//		request.setRequestSeq(requestSeq);
+//		request.setNumOfRows(pageSize);
+//		request.setPageNo(pageNo);
+//		request.setSDate(sDate);
+//		request.setEDate(eDate);
+//		request.setOrderCode(orderCode);
+//		
+//		List<ResponseSFROA0802> listResponse = new ArrayList();
+//		
+//		Response response = this.getDataFromOpenAPI(subUrl, request, listResponse);
+//		
+//		List<ResponseFileDomain> listDownloadFileCandidate = new ArrayList<>();
+//		for(ResponseSFROA0802 responseSFROA0802 : listResponse){
+//			
+//			ResponseSFROA0802Domain responseSFROA0802Domain = new ResponseSFROA0802Domain();
+//			BeanUtils.copyProperties(responseSFROA0802, responseSFROA0802Domain);
+//			
+//			responseSFROA0802Domain.setTransferYn("N");
+//			responseSFROA0802Repository.save(responseSFROA0802Domain);
+//			if(null != responseSFROA0802.getAnnStdDoc1()
+//					&& !"".equals(responseSFROA0802.getAnnStdDoc1())){
+//				
+//				ResponseFileDomain responseFileDomain = new ResponseFileDomain();
+//				responseFileDomain.setUrl(responseSFROA0802.getAnnStdDoc1());
+//				
+//				responseFileRepository.save(responseFileDomain);
+//				
+//				listDownloadFileCandidate.add(responseFileDomain);
+//			}
+//		}
+//		responseFileRepository.flush();
+//		responseSFROA0802Repository.flush();
 		
 //		if(listDownloadFileCandidate.size() > 0){
 //			try {
@@ -193,12 +193,12 @@ public class RequestSFROA0802Service {
 //			}
 //		}
 		
-		if(listResponse.size() > 0){
+//		if(listResponse.size() > 0){
 			Properties prop = new Properties();
 			prop.setProperty("groupId", groupId);
-			prop.setProperty("requestSeq", Integer.toString(requestSeq));
-			prop.setProperty("pageSize", Integer.toString(pageSize));
-			prop.setProperty("pageNo", Integer.toString(pageNo));
+//			prop.setProperty("requestSeq", Integer.toString(requestSeq));
+//			prop.setProperty("pageSize", Integer.toString(pageSize));
+//			prop.setProperty("pageNo", Integer.toString(pageNo));
 			prop.setProperty("sDate", sDate);
 			prop.setProperty("eDate", eDate);
 			prop.setProperty("orderCode", orderCode);
@@ -218,8 +218,16 @@ public class RequestSFROA0802Service {
 	        simpleJobLauncher.setTaskExecutor(simpleAsyncTaskExecutor);
 	        simpleJobLauncher.afterPropertiesSet();
 	        
-	        // Step2 구성 시작
-	        ListItemReader<ResponseFileDomain> listItemReader = new ListItemReader<>(listDownloadFileCandidate);
+	        // Step1 구성 시작
+	        Step requestSFROA802TaskletStep = stepBuilderFactory.get("requestSFROA802")
+	        		.tasklet(requestSFROA802Tasklet)
+	        		.transactionManager(datasourceOneTransactionManager)
+	        		.build();
+	        // Step1 구성 끝
+	        
+	        // Step3 구성 시작
+//	        ListItemReader<ResponseFileDomain> listFileItemReader = new ListItemReader<>(listDownloadFileCandidate);
+	        ItemReader listFileItemReader = responseFileItemReader;
 	        
 	        AsyncItemProcessor asyncItemProcessor = new AsyncItemProcessor();
 	        asyncItemProcessor.setDelegate(responseFileItemProcessor);
@@ -231,44 +239,40 @@ public class RequestSFROA0802Service {
 			asyncItemWriter.setDelegate(writer);
 	        
 	        Step responseFileDomainTransferStep = ((SimpleStepBuilder<ResponseFileDomain, ExternalResponseFileDomain>) stepBuilderFactory.get("responseFileDomainTransfer")
-	                .<ResponseFileDomain, ExternalResponseFileDomain> chunk(100) // 읽기/쓰기 단위
+	                .<ResponseFileDomain, ExternalResponseFileDomain> chunk(200) // 읽기/쓰기 단위
 	                .transactionManager(datasourceTwoTransactionManager))
-	                .reader(listItemReader)
+	                .reader(listFileItemReader)
 	                .writer(asyncItemWriter)
 	                .processor(asyncItemProcessor)
 	                .build();
+	        // Step3 구성 끝
 	        
-	        // Step2 구성 끝
-	        
-	        // Step3 구성 시작
+	        // Step4 구성 시작
 	        Step responseSFROA802ErrorMailSendStep = stepBuilderFactory.get("responseSFROA802ErrorMailSend")
 	        		.tasklet(responseSFROA802ErrorMailSendTasklet)
 	        		.build();
-	        // Step3 구성 끝
+	        // Step4 구성 끝
 	        
-	        Job job = jobBuilderFactory.get("responseSFROA0802ExportToExternal")
+	        Job job = jobBuilderFactory.get("SFROA0802")
 	        		.listener(responseSFROA0802JobExecutionListener)
-	        		.start(this.responseSFROA0802DomainTransferStep())
-	        		.on(FlowExecutionStatus.COMPLETED.getName())	// Step1이 성공이라면
-	        		.to(responseFileDomainTransferStep)				// Step2로 넘어가고
-	        		.on(FlowExecutionStatus.FAILED.getName())		// Step1이 실패라면
-	        		.to(responseSFROA802ErrorMailSendStep)			// Step3으로 넘어간다.
+	        		.start(requestSFROA802TaskletStep)
+	        		.next(this.responseSFROA0802DomainTransferStep())
+	        		.next(responseFileDomainTransferStep)
+	        		.on(FlowExecutionStatus.FAILED.getName())
+	        		.to(responseSFROA802ErrorMailSendStep)
 	        		.end()
 	        		.build();
 	        
 			RequestSFROA0802DomainKey id = new RequestSFROA0802DomainKey();
 			id.setGroupId(groupId);
-			id.setRequestSeq(response.getBody().getPageNo());
+			id.setRequestSeq(1);
 			
 			RequestSFROA0802Domain requestSFROA0802Domain = requestSFROA0802Repository.findOne(id);
 			JobExecution execution = simpleJobLauncher.run(job, jobParameters);
 	        requestSFROA0802Domain.setJobExecutionId(execution.getId());
 	        requestSFROA0802Domain.setJobExecutionStatus(execution.getStatus().toString());
 	        requestSFROA0802Repository.saveAndFlush(requestSFROA0802Domain);
-		}
-		
-		// 사용이 끝나면 삭제하기
-		OpenAPIContext.reset();
+//		}
 		
 		log.debug("#############################");
 		log.debug("업무 끝");
@@ -352,10 +356,6 @@ public class RequestSFROA0802Service {
 			request.setPageNo(paging.getNextPageNo());
 			request.setRequestSeq(paging.getNextPageNo());
 			
-			OpenAPIRequest openAPIRequest = OpenAPIContext.get();
-			openAPIRequest.setRequestSeq(paging.getNextPageNo());
-			OpenAPIContext.set(openAPIRequest);
-			
 			return getDataFromOpenAPI(subUrl, request, listResponse);
 		}
 		
@@ -365,7 +365,7 @@ public class RequestSFROA0802Service {
 	@Bean
 	public Step responseSFROA0802DomainTransferStep() throws Exception {
 		return ((SimpleStepBuilder<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain>) stepBuilderFactory.get("responseSFROA0802DomainTransfer")
-                .<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> chunk(100) // 읽기/쓰기 단위
+                .<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> chunk(200) // 읽기/쓰기 단위
                 .transactionManager(datasourceTwoTransactionManager))
                 .reader(responseSFROA0802ItemReader)
                 .writer(responseSFROA0802Writer())

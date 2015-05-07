@@ -62,11 +62,9 @@ public class ResponseFileItemProcessor implements ItemProcessor<ResponseFileDoma
         
         responseFileDomain.setFilePath(file.getAbsolutePath());
         
-        log.debug("ResponseFileDomain DB 저장 "+responseFileDomain);
+        log.debug("ResponseFileDomain DB 저장");
         responseFileRepository.saveAndFlush(responseFileDomain);
         
-        // TODO : 파일 복사 로직도 포함할지, Step으로 분리할지 고민
-            
     	ExternalResponseFileDomain externalResponseFileDomain = new ExternalResponseFileDomain();
     	BeanUtils.copyProperties(responseFileDomain, externalResponseFileDomain);
         return externalResponseFileDomain;

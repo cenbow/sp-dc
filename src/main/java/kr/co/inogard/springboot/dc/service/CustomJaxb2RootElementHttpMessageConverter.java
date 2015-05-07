@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
@@ -54,9 +56,7 @@ public class CustomJaxb2RootElementHttpMessageConverter extends Jaxb2RootElement
 			try {
 				inputStream = (InputStream)new ByteArrayInputStream(_copy.toByteArray());
 				
-				OpenAPIRequest openAPIRequest = OpenAPIContext.get();
-				
-				String tempFileName = openAPIRequest.getGroupId()+"_"+openAPIRequest.getRequestSeq();
+				String tempFileName = new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
 				
 				log.debug("Raw XML file path "+agentRootDirectory+tempFileName+".xml");
 				File file = new File(agentRootDirectory+tempFileName+".xml");

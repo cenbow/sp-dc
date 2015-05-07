@@ -7,13 +7,11 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.Future;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
 import kr.co.inogard.springboot.dc.Application;
-import kr.co.inogard.springboot.dc.domain.OpenAPIRequest;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802Domain;
 import kr.co.inogard.springboot.dc.domain.RequestSFROA0802DomainKey;
@@ -25,7 +23,6 @@ import kr.co.inogard.springboot.dc.external.domain.ExternalResponseFileDomain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseSFROA0802Domain;
 import kr.co.inogard.springboot.dc.repository.RequestSFROA0802Repository;
 import kr.co.inogard.springboot.dc.service.AnnStdDocAsyncDownloadService;
-import kr.co.inogard.springboot.dc.service.OpenAPIContext;
 import kr.co.inogard.springboot.dc.service.OpenAPIRequestService;
 import kr.co.inogard.springboot.dc.service.Paging;
 import kr.co.inogard.springboot.dc.service.ResponseFileItemProcessor;
@@ -44,7 +41,6 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -52,10 +48,7 @@ import org.springframework.batch.core.converter.DefaultJobParametersConverter;
 import org.springframework.batch.core.converter.JobParametersConverter;
 import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.integration.async.AsyncItemProcessor;
@@ -145,10 +138,6 @@ public class DataGovControllerTest {
 		
 		// 업무 트렌젝션(DB아님) 단위의 키로 사용할 값을 생성하여 OpenAPIContext에 담아서 같은 값을 사용할 수 있도록 함.
 		String timestamp = new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
-		OpenAPIRequest openAPIRequest = new OpenAPIRequest();
-		openAPIRequest.setGroupId(timestamp);
-		openAPIRequest.setRequestSeq(1);
-		OpenAPIContext.set(openAPIRequest);
 		
 //		RequestSFROA0802 requestSFROA0802 = this.getBeanInstance(RequestSFROA0802.class);
 		
@@ -273,10 +262,9 @@ public class DataGovControllerTest {
 	        log.debug("Exit Status : " + execution.getStatus());
 	        
 	        
-	        openAPIRequest = OpenAPIContext.get();
 			RequestSFROA0802DomainKey id = new RequestSFROA0802DomainKey();
-			id.setGroupId(openAPIRequest.getGroupId());
-			id.setRequestSeq(openAPIRequest.getRequestSeq());
+			id.setGroupId(timestamp);
+			id.setRequestSeq(response.getBody().getPageNo());
 			
 			RequestSFROA0802Domain requestSFROA0802Domain = requestSFROA0802Repository.findOne(id);
 	        requestSFROA0802Domain.setJobExecutionId(execution.getId());
@@ -285,9 +273,6 @@ public class DataGovControllerTest {
 		}
 		
 //		Thread.sleep(30000);
-		
-		// 사용이 끝나면 삭제하기
-		OpenAPIContext.reset();
 		
 		log.debug("#############################");
 		log.debug("업무 끝");
@@ -370,10 +355,6 @@ public class DataGovControllerTest {
 		if(paging.getNextPageNo() > response.getBody().getPageNo()){
 			request.setPageNo(paging.getNextPageNo());
 			request.setRequestSeq(paging.getNextPageNo());
-			
-			OpenAPIRequest openAPIRequest = OpenAPIContext.get();
-			openAPIRequest.setRequestSeq(paging.getNextPageNo());
-			OpenAPIContext.set(openAPIRequest);
 			
 			return getDataFromOpenAPI(subUrl, request, listResponse);
 		}

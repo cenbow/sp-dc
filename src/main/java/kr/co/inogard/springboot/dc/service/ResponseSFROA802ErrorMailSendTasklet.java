@@ -33,7 +33,7 @@ public class ResponseSFROA802ErrorMailSendTasklet implements Tasklet {
 	public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 		
 		String recipientTemp = "";
-		if("responseSFROA0802ExportToExternal".equals(chunkContext.getStepContext().getJobName())){
+		if("SFROA0802".equals(chunkContext.getStepContext().getJobName())){
 			recipientTemp = "twinmoon@inogard.co.kr"; // TODO : 해당 Job의 담당자 정보를 얻어서 이메일 주소를 가져온다.
 		}
 		final String recipient	= recipientTemp;
