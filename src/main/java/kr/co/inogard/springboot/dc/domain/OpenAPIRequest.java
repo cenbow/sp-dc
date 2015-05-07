@@ -8,8 +8,6 @@ public class OpenAPIRequest<T> {
 	
 	private int requestSeq;
 	
-	private List<T> listResponse;
-
 	public String getGroupId() {
 		return groupId;
 	}
@@ -24,14 +22,6 @@ public class OpenAPIRequest<T> {
 
 	public void setRequestSeq(int requestSeq) {
 		this.requestSeq = requestSeq;
-	}
-
-	public List<T> getListResponse() {
-		return listResponse;
-	}
-
-	public void setListResponse(List<T> listResponse) {
-		this.listResponse = listResponse;
 	}
 	
 }

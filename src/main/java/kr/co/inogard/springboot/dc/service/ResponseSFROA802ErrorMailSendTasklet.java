@@ -1,7 +1,6 @@
 package kr.co.inogard.springboot.dc.service;
 
 import java.util.Iterator;
-import java.util.Map;
 
 import javax.mail.Message;
 import javax.mail.internet.InternetAddress;
@@ -31,27 +30,22 @@ public class ResponseSFROA802ErrorMailSendTasklet implements Tasklet {
 	private JavaMailSender mailSender;
 
 	@Override
-	public RepeatStatus execute(StepContribution contribution,
-			ChunkContext chunkContext) throws Exception {
+	public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 		
 		String recipientTemp = "";
 		if("responseSFROA0802ExportToExternal".equals(chunkContext.getStepContext().getJobName())){
 			recipientTemp = "twinmoon@inogard.co.kr"; // TODO : 해당 Job의 담당자 정보를 얻어서 이메일 주소를 가져온다.
 		}
-		final String recipient = recipientTemp;
+		final String recipient	= recipientTemp;
 		final String subject	= "Batch Job["+chunkContext.getStepContext().getJobName()+"] 실행에서 오류가 발생하였습니다.";
-		
-		String exitDescription = "";
+		String exitDescription 	= "";
 		for(Iterator<StepExecution> iter = chunkContext.getStepContext().getStepExecution().getJobExecution().getStepExecutions().iterator(); iter.hasNext(); ){
 			StepExecution se = iter.next();
 			if("FAILED".equals(se.getExitStatus().getExitCode())){
 				exitDescription += se.getExitStatus().getExitDescription() + "\r\n";
 			}
 		}
-		
 		final String body = exitDescription; // 메일 본문에 넣을 내용
-		log.debug(body);
-		log.debug("======================");
 		
 		MimeMessagePreparator preparator = new MimeMessagePreparator() {
 

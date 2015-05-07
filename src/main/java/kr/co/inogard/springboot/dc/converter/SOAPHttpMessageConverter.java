@@ -55,19 +55,20 @@ public class SOAPHttpMessageConverter extends AbstractHttpMessageConverter<SOAPM
 			MimeHeaders header = new MimeHeaders();
 			header.addHeader("Content-Type", CONTENT_TYPE);
 			try {
-			    MessageFactory factory = MessageFactory.newInstance("SOAP 1.2 Protocol");
+//			    MessageFactory factory = MessageFactory.newInstance("SOAP 1.2 Protocol");
+				MessageFactory factory = MessageFactory.newInstance();
 			    bin = new ByteArrayInputStream(readBuffer);
 			    msg = factory.createMessage(header, bin);
 			} catch(Exception ex) {
 				ex.printStackTrace();
 				
-				try {
-			        MessageFactory factory = MessageFactory.newInstance("SOAP 1.1 Protocol");
-			        bin = new ByteArrayInputStream(readBuffer);
-			        msg = factory.createMessage(header, bin);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+//				try {
+//			        MessageFactory factory = MessageFactory.newInstance("SOAP 1.1 Protocol");
+//			        bin = new ByteArrayInputStream(readBuffer);
+//			        msg = factory.createMessage(header, bin);
+//				} catch (Exception e) {
+//					e.printStackTrace();
+//				}
 			} finally {
 			    try {
 			        if(null != bin){

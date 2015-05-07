@@ -373,7 +373,6 @@ public class DataGovControllerTest {
 			
 			OpenAPIRequest openAPIRequest = OpenAPIContext.get();
 			openAPIRequest.setRequestSeq(paging.getNextPageNo());
-			openAPIRequest.setListResponse(listResponse);
 			OpenAPIContext.set(openAPIRequest);
 			
 			return getDataFromOpenAPI(subUrl, request, listResponse);

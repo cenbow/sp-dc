@@ -27,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -219,9 +218,7 @@ public class RequestSFROA0802Service {
 	        simpleJobLauncher.setTaskExecutor(simpleAsyncTaskExecutor);
 	        simpleJobLauncher.afterPropertiesSet();
 	        
-//	        List<Step> listStep = new ArrayList<>();
-//	        listStep.add(this.responseSFROA0802DomainTransferStep());
-	        
+	        // Step2 구성 시작
 	        ListItemReader<ResponseFileDomain> listItemReader = new ListItemReader<>(listDownloadFileCandidate);
 	        
 	        AsyncItemProcessor asyncItemProcessor = new AsyncItemProcessor();
@@ -241,40 +238,30 @@ public class RequestSFROA0802Service {
 	                .processor(asyncItemProcessor)
 	                .build();
 	        
-//	        listStep.add(responseFileDomainTransferStep);
+	        // Step2 구성 끝
 	        
+	        // Step3 구성 시작
 	        Step responseSFROA802ErrorMailSendStep = stepBuilderFactory.get("responseSFROA802ErrorMailSend")
 	        		.tasklet(responseSFROA802ErrorMailSendTasklet)
 	        		.build();
+	        // Step3 구성 끝
 	        
 	        Job job = jobBuilderFactory.get("responseSFROA0802ExportToExternal")
 	        		.listener(responseSFROA0802JobExecutionListener)
 	        		.start(this.responseSFROA0802DomainTransferStep())
-	        		.on(FlowExecutionStatus.COMPLETED.getName())
-	        		.to(responseFileDomainTransferStep)
-	        		.on(FlowExecutionStatus.FAILED.getName())
-	        		.to(responseSFROA802ErrorMailSendStep)
+	        		.on(FlowExecutionStatus.COMPLETED.getName())	// Step1이 성공이라면
+	        		.to(responseFileDomainTransferStep)				// Step2로 넘어가고
+	        		.on(FlowExecutionStatus.FAILED.getName())		// Step1이 실패라면
+	        		.to(responseSFROA802ErrorMailSendStep)			// Step3으로 넘어간다.
 	        		.end()
 	        		.build();
 	        
-//	        JobExecutionListener[] arrListener = {responseSFROA0802JobExecutionListener};
-//	        
-//	        SimpleJob job = new SimpleJob();
-//	        job.setName("responseSFROA0802ExportToExternal");
-//	        job.setJobExecutionListeners(arrListener);
-//	        job.setSteps(listStep);
-//	        job.setJobRepository(jobRepository);
-	        
-	        JobExecution execution = simpleJobLauncher.run(job, jobParameters);
-	        log.debug("execution.getId() = " + execution.getId());
-	        log.debug("Exit Status : " + execution.getStatus());
-	        
-			openAPIRequest = OpenAPIContext.get();
 			RequestSFROA0802DomainKey id = new RequestSFROA0802DomainKey();
-			id.setGroupId(openAPIRequest.getGroupId());
-			id.setRequestSeq(openAPIRequest.getRequestSeq());
+			id.setGroupId(groupId);
+			id.setRequestSeq(response.getBody().getPageNo());
 			
 			RequestSFROA0802Domain requestSFROA0802Domain = requestSFROA0802Repository.findOne(id);
+			JobExecution execution = simpleJobLauncher.run(job, jobParameters);
 	        requestSFROA0802Domain.setJobExecutionId(execution.getId());
 	        requestSFROA0802Domain.setJobExecutionStatus(execution.getStatus().toString());
 	        requestSFROA0802Repository.saveAndFlush(requestSFROA0802Domain);
@@ -367,7 +354,6 @@ public class RequestSFROA0802Service {
 			
 			OpenAPIRequest openAPIRequest = OpenAPIContext.get();
 			openAPIRequest.setRequestSeq(paging.getNextPageNo());
-			openAPIRequest.setListResponse(listResponse);
 			OpenAPIContext.set(openAPIRequest);
 			
 			return getDataFromOpenAPI(subUrl, request, listResponse);
