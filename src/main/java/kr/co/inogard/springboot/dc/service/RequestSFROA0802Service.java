@@ -127,6 +127,23 @@ public class RequestSFROA0802Service {
         		.build();
         // Step1 구성 끝
         
+        // Step2 구성 시작
+        JpaItemWriter<ExternalResponseSFROA0802Domain> responseSFROA0802Writer = new JpaItemWriter();
+        responseSFROA0802Writer.setEntityManagerFactory(datasourceTwoEntityManager);
+        
+        ItemProcessor<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> responseSFROA0802Processor = new ResponseSFROA0802ItemProcessor();
+        
+        Step responseSFROA0802DomainTransferStep = ((SimpleStepBuilder<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain>) stepBuilderFactory.get("responseSFROA0802DomainTransfer")
+        		.<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> chunk(200) // 읽기/쓰기 단위
+                .transactionManager(datasourceTwoTransactionManager))
+                .reader(responseSFROA0802ItemReader)
+                .writer(responseSFROA0802Writer)
+                .processor(responseSFROA0802Processor)
+                .listener(responseSFROA0802ItemWriterListener)
+                .build();
+        
+        // Step2 구성 끝
+        
         // Step3 구성 시작
         ItemReader listFileItemReader = responseFileItemReader;
         
@@ -154,40 +171,18 @@ public class RequestSFROA0802Service {
         		.build();
         // Step4 구성 끝
         
+        // Job에 Step 결합
         Job job = jobBuilderFactory.get("SFROA0802")
         		.listener(responseSFROA0802JobExecutionListener)
         		.start(requestSFROA802TaskletStep)
-        		.next(this.responseSFROA0802DomainTransferStep())
+        		.next(responseSFROA0802DomainTransferStep)
         		.next(responseFileDomainTransferStep)
         		.on(FlowExecutionStatus.FAILED.getName())
         		.to(responseSFROA802ErrorMailSendStep)
         		.end()
         		.build();
         
+        // 실행
 		JobExecution execution = simpleJobLauncher.run(job, jobParameters);
 	}
-	
-	@Bean
-	public Step responseSFROA0802DomainTransferStep() throws Exception {
-		return ((SimpleStepBuilder<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain>) stepBuilderFactory.get("responseSFROA0802DomainTransfer")
-                .<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> chunk(200) // 읽기/쓰기 단위
-                .transactionManager(datasourceTwoTransactionManager))
-                .reader(responseSFROA0802ItemReader)
-                .writer(responseSFROA0802Writer())
-                .processor(responseSFROA0802Processor())
-                .listener(responseSFROA0802ItemWriterListener)
-                .build();
-	}
-	
-	@Bean
-	public JpaItemWriter<ExternalResponseSFROA0802Domain> responseSFROA0802Writer() {
-    	JpaItemWriter writer = new JpaItemWriter();
-		writer.setEntityManagerFactory(datasourceTwoEntityManager);
-	    return writer;
-	}
-	
-	@Bean
-	public ItemProcessor<ResponseSFROA0802Domain, ExternalResponseSFROA0802Domain> responseSFROA0802Processor() {
-        return new ResponseSFROA0802ItemProcessor();
-    }
 }
