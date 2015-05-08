@@ -13,8 +13,6 @@ import javax.xml.transform.Source;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamSource;
 
-import kr.co.inogard.springboot.dc.domain.OpenAPIRequest;
-
 import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +55,7 @@ public class CustomJaxb2RootElementHttpMessageConverter extends Jaxb2RootElement
 				inputStream = (InputStream)new ByteArrayInputStream(_copy.toByteArray());
 				
 				String tempFileName = new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
+				RestTemplateSaveFileHolder.set(tempFileName);
 				
 				log.debug("Raw XML file path "+agentRootDirectory+tempFileName+".xml");
 				File file = new File(agentRootDirectory+tempFileName+".xml");

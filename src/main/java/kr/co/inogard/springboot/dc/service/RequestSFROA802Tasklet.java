@@ -140,11 +140,14 @@ public class RequestSFROA802Tasklet implements Tasklet {
 		log.debug("PageNo = " 		+ response.getBody().getPageNo());
 		log.debug("TotalCount = " 	+ response.getBody().getTotalCount());
 		
+		String saveFileName = RestTemplateSaveFileHolder.get();
+		RestTemplateSaveFileHolder.reset();
+		
 		// 조회조건 결과 저장
 		requestSFROA0802Domain.setResultCode(response.getHeader().getResultCode());
 		requestSFROA0802Domain.setResultMsg(response.getHeader().getResultMsg());
 		requestSFROA0802Domain.setTotalCount(response.getBody().getTotalCount());
-		requestSFROA0802Domain.setHashCode(FileUtil.getHashSHA256FromFilepath(agentRootDirectory+request.getGroupId()+"_"+request.getRequestSeq()+".xml"));	// Response 객채를 Hash로 변환해서 저장한다.
+		requestSFROA0802Domain.setHashCode(FileUtil.getHashSHA256FromFilepath(agentRootDirectory+saveFileName+".xml"));	// Response 객채를 Hash로 변환해서 저장한다.
 		requestSFROA0802Repository.saveAndFlush(requestSFROA0802Domain);
 		
 		if(response.getBody().getTotalCount() > 0 
