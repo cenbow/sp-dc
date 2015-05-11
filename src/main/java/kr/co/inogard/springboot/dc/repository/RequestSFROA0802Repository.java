@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface RequestSFROA0802Repository extends JpaRepository<RequestSFROA0802Domain, RequestSFROA0802DomainKey> {
 
-	@Query("SELECT a FROM RequestSFROA0802 a WHERE groupId != :groupId AND sDate = :sDate AND eDate = :eDate AND orderCode = :orderCode ORDER BY groupId Desc")
+	@Query("SELECT a FROM RequestSFROA0802 a WHERE groupId != :groupId AND sDate = :sDate AND eDate = :eDate AND orderCode = :orderCode AND jobExecutionStatus = 'COMPLETED' ORDER BY groupId Desc")
     public List<RequestSFROA0802Domain> findBySDateAndEDateAndOrderCode(@Param("groupId") String groupId
     		, @Param("sDate") String sDate
     		, @Param("eDate") String eDate

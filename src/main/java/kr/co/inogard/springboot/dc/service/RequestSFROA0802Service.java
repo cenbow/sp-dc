@@ -120,14 +120,16 @@ public class RequestSFROA0802Service {
         simpleJobLauncher.setTaskExecutor(simpleAsyncTaskExecutor);
         simpleJobLauncher.afterPropertiesSet();
         
-        // Step1 구성 시작
+        // Step1 구성 시작(데이터 가져오기)
         Step requestSFROA802TaskletStep = stepBuilderFactory.get("requestSFROA802")
         		.tasklet(requestSFROA802Tasklet)
         		.transactionManager(datasourceOneTransactionManager)
+        		//.startLimit(3)	// 오류 발생 시 3번만 재시도
+        		//.allowStartIfComplete(true)	// 작업 재시작 시 현재 Step도 다시 실행할지
         		.build();
         // Step1 구성 끝
         
-        // Step2 구성 시작
+        // Step2 구성 시작(가져온 데이터를 타 DB로 복사하기)
         JpaItemWriter<ExternalResponseSFROA0802Domain> responseSFROA0802Writer = new JpaItemWriter();
         responseSFROA0802Writer.setEntityManagerFactory(datasourceTwoEntityManager);
         
@@ -141,10 +143,9 @@ public class RequestSFROA0802Service {
                 .processor(responseSFROA0802Processor)
                 .listener(responseSFROA0802ItemWriterListener)
                 .build();
-        
         // Step2 구성 끝
         
-        // Step3 구성 시작
+        // Step3 구성 시작(가져온 데이터 중 파일정보를 타 DB로 복사하기)
         ItemReader listFileItemReader = responseFileItemReader;
         
         AsyncItemProcessor asyncItemProcessor = new AsyncItemProcessor();
@@ -165,7 +166,7 @@ public class RequestSFROA0802Service {
                 .build();
         // Step3 구성 끝
         
-        // Step4 구성 시작
+        // Step4 구성 시작(오류가 발생하면 E-Mail로 알림)
         Step responseSFROA802ErrorMailSendStep = stepBuilderFactory.get("responseSFROA802ErrorMailSend")
         		.tasklet(responseSFROA802ErrorMailSendTasklet)
         		.build();
