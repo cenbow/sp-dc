@@ -37,15 +37,6 @@ public class ResponseFileItemReader extends JpaPagingItemReader<ResponseFileDoma
 	
 	@PostConstruct
 	public void init() throws Exception{
-    	Map<String, Object> mapParam = new HashMap<>();
-    	mapParam.put("groupId", groupId);
-    	
-//    	JpaNativeQueryProvider<ResponseFileDomain> jpaNativeQueryProvider= new JpaNativeQueryProvider<ResponseFileDomain>();
-//    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseFile WHERE groupId=:groupId");
-//    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseFile");
-//    	jpaNativeQueryProvider.setEntityClass(ResponseFileDomain.class);
-//    	jpaNativeQueryProvider.afterPropertiesSet();
-    	
     	CriteriaBuilder cb = datasourceOneEntityManager.getCriteriaBuilder();
     	CriteriaQuery<ResponseFileDomain> cq = cb.createQuery(ResponseFileDomain.class);
     	Root root = cq.from(ResponseFileDomain.class);
@@ -57,8 +48,6 @@ public class ResponseFileItemReader extends JpaPagingItemReader<ResponseFileDoma
     	log.debug(queryString);
     	
 		super.setEntityManagerFactory(datasourceOneEntityManager);
-//		super.setQueryProvider(jpaNativeQueryProvider);
-//		super.setParameterValues(mapParam);
 		super.setQueryString(queryString);
 		super.setPageSize(10);
 		super.afterPropertiesSet();

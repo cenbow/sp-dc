@@ -11,7 +11,6 @@ import kr.co.inogard.springboot.dc.domain.ResponseFileDomain;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802Domain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseFileDomain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseSFROA0802Domain;
-import kr.co.inogard.springboot.dc.repository.RequestSFROA0802Repository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +34,6 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -97,10 +94,10 @@ public class RequestSFROA0802Service {
 		Assert.notNull(eDate, "'eDate' must not be null");
 		Assert.notNull(orderCode, "'orderCode' must not be null");
 		
-		String groupId	= new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
+//		String groupId	= new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
 		
 		Properties prop = new Properties();
-		prop.setProperty("groupId", groupId);
+//		prop.setProperty("groupId", groupId);
 		prop.setProperty("sDate", sDate);
 		prop.setProperty("eDate", eDate);
 		prop.setProperty("orderCode", orderCode);

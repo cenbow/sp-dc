@@ -65,6 +65,7 @@ public class DatasourceOneConfig {
 		properties.setProperty("hibernate.hbm2ddl.auto", hbm2ddlAuto);
 		properties.setProperty("hibernate.dialect", databasePlatform);
 		properties.setProperty("hibernate.show_sql", showSql);
+		properties.setProperty("hibernate.temp.use_jdbc_metadata_defaults", "false");
 		return properties;
 	}
 	

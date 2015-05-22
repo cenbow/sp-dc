@@ -1,6 +1,8 @@
 package kr.co.inogard.springboot.dc.service;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -54,7 +56,7 @@ public class RequestSFROA802Tasklet implements Tasklet {
 		
 		JobParameters jobParameters = chunkContext.getStepContext().getStepExecution().getJobParameters();
 
-		String groupId 		= StringUtil.nvl(jobParameters.getString("groupId"));
+		String groupId 		= new SimpleDateFormat("yyyyMMddhhmmss").format(new Date());
 		String sDate 		= StringUtil.nvl(jobParameters.getString("sDate"));
 		String eDate		= StringUtil.nvl(jobParameters.getString("eDate"));
 		String orderCode	= StringUtil.nvl(jobParameters.getString("orderCode"));

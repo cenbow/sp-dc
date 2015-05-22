@@ -42,11 +42,6 @@ public class ResponseSFROA0802ItemReader extends JpaPagingItemReader<ResponseSFR
     	Map<String, Object> mapParam = new HashMap<>();
     	mapParam.put("transferYn", "Y");
     	
-//    	JpaNativeQueryProvider<ResponseSFROA0802Domain> jpaNativeQueryProvider= new JpaNativeQueryProvider<ResponseSFROA0802Domain>();
-//    	jpaNativeQueryProvider.setSqlQuery("SELECT * FROM ResponseSFROA0802 WHERE transferYn != 'Y'");
-//    	jpaNativeQueryProvider.setEntityClass(ResponseSFROA0802Domain.class);
-//    	jpaNativeQueryProvider.afterPropertiesSet();
-		
     	CriteriaBuilder cb = datasourceOneEntityManager.getCriteriaBuilder();
     	CriteriaQuery<ResponseSFROA0802Domain> cq = cb.createQuery(ResponseSFROA0802Domain.class);
     	Root root = cq.from(ResponseSFROA0802Domain.class);
@@ -58,7 +53,6 @@ public class ResponseSFROA0802ItemReader extends JpaPagingItemReader<ResponseSFR
     	log.debug(queryString);
     	
 		super.setEntityManagerFactory(datasourceOneEntityManager);
-//		super.setQueryProvider(jpaNativeQueryProvider);
 		super.setParameterValues(mapParam);
 		super.setQueryString(queryString);
 		super.setPageSize(10);

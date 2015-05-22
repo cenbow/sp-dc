@@ -1,20 +1,29 @@
 buildscript {
     repositories {
+    	jcenter()
         mavenLocal()
         mavenCentral()
-        //maven { url "http://repo.spring.io/libs-snapshot" }
+        maven { 
+        	url "https://plugins.gradle.org/m2/" 
+		}
     }
     dependencies {
         classpath "org.springframework.boot:spring-boot-gradle-plugin:1.2.2.RELEASE"
         classpath "org.springframework:springloaded:1.2.0.RELEASE"
+        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.1"
+        classpath "me.champeau.gradle:jmh-gradle-plugin:0.2.0"
     }
 }
 
 apply plugin: 'java'
 apply plugin: 'idea'
+apply plugin: 'eclipse'
 apply plugin: 'spring-boot'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: "me.champeau.gradle.jmh"
 
 sourceCompatibility = 1.7
+targetCompatibility = 1.7
 version = '1.0'
 
 jar {
@@ -47,9 +56,28 @@ dependencies {
     compile("org.projectlombok:lombok:1.16.2")							// 공통
     compile("commons-io:commons-io:2.4")								// 공통
     compile("org.springframework:spring-context-support")				// 공통    
-    testCompile("org.springframework.boot:spring-boot-starter-test")	// 테스트
+    compile("org.springframework.boot:spring-boot-starter-test")		// 테스트
 }
 
 task wrapper(type: Wrapper) {
     gradleVersion = '1.11'
+}
+
+jmhJar {
+	append('META-INF/spring.handlers')
+	append('META-INF/spring.schemas')
+	exclude 'LICENSE'
+}
+
+task fatJar(type: Jar) {
+	manifest {
+        attributes 'Implementation-Title': 'Spring Batch with Spring Boot Example',  
+        	'Implementation-Version': version,
+        	'Main-Class': 'kr.co.inogard.springboot.dc.Application'
+    }
+    from { 
+    	configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } 
+	}
+
+    with jar
 }
