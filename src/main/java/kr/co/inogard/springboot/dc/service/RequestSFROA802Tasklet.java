@@ -96,18 +96,22 @@ public class RequestSFROA802Tasklet implements Tasklet {
 			
 			ResponseSFROA0802Domain responseSFROA0802Domain = new ResponseSFROA0802Domain();
 			BeanUtils.copyProperties(responseSFROA0802, responseSFROA0802Domain);
-			
-			responseSFROA0802Domain.setTransferYn("N");
-			responseSFROA0802Repository.save(responseSFROA0802Domain);
-			if(null != responseSFROA0802.getAnnStdDoc1()
-					&& !"".equals(responseSFROA0802.getAnnStdDoc1())){
-				
-				ResponseFileDomain responseFileDomain = new ResponseFileDomain();
-				responseFileDomain.setUrl(responseSFROA0802.getAnnStdDoc1());
-				
-				responseFileRepository.save(responseFileDomain);
-				
-				listDownloadFileCandidate.add(responseFileDomain);
+			Object o = responseSFROA0802Repository.findOne(responseSFROA0802Domain.getBidNo());
+			if(null == o){
+				responseSFROA0802Domain.setTransferYn("N");
+				responseSFROA0802Repository.save(responseSFROA0802Domain);
+				if(null != responseSFROA0802.getAnnStdDoc1()
+						&& !"".equals(responseSFROA0802.getAnnStdDoc1())){
+					
+					ResponseFileDomain responseFileDomain = new ResponseFileDomain();
+					responseFileDomain.setUrl(responseSFROA0802.getAnnStdDoc1());
+					
+					Object o2 = responseFileRepository.findOne(responseFileDomain.getUrl());
+					if(o2 == null){
+						responseFileRepository.save(responseFileDomain);
+						listDownloadFileCandidate.add(responseFileDomain);
+					}
+				}
 			}
 		}
 		responseFileRepository.flush();

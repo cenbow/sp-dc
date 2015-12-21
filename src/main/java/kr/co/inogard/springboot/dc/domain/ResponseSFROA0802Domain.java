@@ -1,14 +1,10 @@
 package kr.co.inogard.springboot.dc.domain;
 
 import java.io.Serializable;
-import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import lombok.Data;
@@ -42,9 +38,9 @@ public class ResponseSFROA0802Domain implements Serializable {
 	@Column(name="transferYn", length=1)
 	private String transferYn;
 	
-	@OneToMany(fetch=FetchType.LAZY
-			, mappedBy="responseSFROA0802Domain"
-			, cascade=CascadeType.REMOVE) 
-	private List<ResponseFileDomain> responseFileDomain;
+//	@OneToMany(fetch=FetchType.LAZY
+//			, mappedBy="responseSFROA0802Domain"
+//			, cascade=CascadeType.REMOVE) 
+//	private List<ResponseFileDomain> responseFileDomain;
 	
 }

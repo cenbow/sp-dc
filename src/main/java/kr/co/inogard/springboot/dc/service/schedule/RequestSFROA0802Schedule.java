@@ -38,7 +38,7 @@ public class RequestSFROA0802Schedule {
 		String eDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 		
 		sDate = "20150401";	// TODO : 테스트 후 삭제
-		eDate = "20150420"; // TODO : 테스트 후 삭제
+		eDate = "20150430"; // TODO : 테스트 후 삭제
 		
 		requestSFROA0802Service.run(sDate, eDate, orderCode);
 		

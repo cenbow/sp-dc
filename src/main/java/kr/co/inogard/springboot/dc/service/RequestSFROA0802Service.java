@@ -7,10 +7,13 @@ import java.util.Properties;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
+import kr.co.inogard.springboot.dc.domain.OpenapiBatchJobMapperDomain;
+import kr.co.inogard.springboot.dc.domain.OpenapiBatchJobMapperDomainKey;
 import kr.co.inogard.springboot.dc.domain.ResponseFileDomain;
 import kr.co.inogard.springboot.dc.domain.ResponseSFROA0802Domain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseFileDomain;
 import kr.co.inogard.springboot.dc.external.domain.ExternalResponseSFROA0802Domain;
+import kr.co.inogard.springboot.dc.repository.OpenapiBatchJobMapperRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +46,8 @@ import org.springframework.util.Assert;
 public class RequestSFROA0802Service {
 	
 	private static final Logger log = LoggerFactory.getLogger(RequestSFROA0802Service.class);
+	
+	private static final int openApiId = 1;
 	
 	@Autowired
 	@Qualifier("datasourceOneTransactionManager")
@@ -85,6 +90,9 @@ public class RequestSFROA0802Service {
 	private ResponseSFROA802ErrorMailSendTasklet responseSFROA802ErrorMailSendTasklet;
 	
 	@Autowired
+	private OpenapiBatchJobMapperRepository openapiBatchJobMapperRepository;
+	
+	@Autowired
 	@Qualifier("datasourceTwoEntityManager")
 	private EntityManagerFactory datasourceTwoEntityManager;
 	
@@ -101,6 +109,7 @@ public class RequestSFROA0802Service {
 		prop.setProperty("sDate", sDate);
 		prop.setProperty("eDate", eDate);
 		prop.setProperty("orderCode", orderCode);
+		prop.setProperty("date", new SimpleDateFormat("yyyyMMddhhmmss").format(new Date()));
 		
 		JobParametersConverter jobParametersConverter = new DefaultJobParametersConverter();
 		JobParameters jobParameters = jobParametersConverter.getJobParameters(prop);
@@ -182,5 +191,10 @@ public class RequestSFROA0802Service {
         
         // ½ÇÇà
 		JobExecution execution = simpleJobLauncher.run(job, jobParameters);
+		OpenapiBatchJobMapperDomain openapiBatchJobMapperDomain = new OpenapiBatchJobMapperDomain();
+		openapiBatchJobMapperDomain.setJobExecutionId(execution.getId());
+		openapiBatchJobMapperDomain.setOpenApiId(openApiId);
+		
+		openapiBatchJobMapperRepository.save(openapiBatchJobMapperDomain);
 	}
 }

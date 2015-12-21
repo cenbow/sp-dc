@@ -5,9 +5,6 @@ import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinColumns;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import lombok.Data;
@@ -29,10 +26,10 @@ public class ResponseFileDomain implements Serializable {
 	@Column(name="filePath", length=500)
 	private String filePath;
 	
-	@ManyToOne
-	@JoinColumns({
-			@JoinColumn(name="url", referencedColumnName="annStdDoc1", nullable=false, insertable=false, updatable=false)
-		})
-	private ResponseSFROA0802Domain responseSFROA0802Domain;
+//	@ManyToOne
+//	@JoinColumns({
+//			@JoinColumn(name="url", referencedColumnName="annStdDoc1", unique=false, nullable=true, insertable=false, updatable=false)
+//		})
+//	private ResponseSFROA0802Domain responseSFROA0802Domain;
 	
 }
